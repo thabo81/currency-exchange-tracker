@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Currency Exchange Tracker</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="auth-body">
+    <div class="auth-shell">
+      <div class="auth-card">
+        <div class="brand-row">
+          <div class="brand-mark">$</div>
+          <div>
+            <p class="eyebrow">Portfolio vault</p>
+            <h1>Currency Exchange</h1>
+          </div>
+        </div>
+
+        <div class="auth-form-panel active" id="login-panel">
+          <h2>Welcome back</h2>
+          <p>Sign in to monitor exchange rates and convert currencies.</p>
+          <form id="login-form" class="auth-form">
+            <label>
+              <span>Email</span>
+              <input id="login-email" type="email" placeholder="you@example.com" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="login-password" type="password" placeholder="••••••••" required />
+            </label>
+            <div class="row between">
+              <label class="checkbox-row">
+                <input id="remember-me" type="checkbox" />
+                <span>Remember me</span>
+              </label>
+              <button type="button" class="link-button" id="show-register">Create account</button>
+            </div>
+            <button type="submit" class="primary-btn">Login</button>
+          </form>
+        </div>
+
+        <div class="auth-form-panel" id="register-panel">
+          <h2>Create account</h2>
+          <p>Register to verify your email and access conversion tools.</p>
+          <form id="register-form" class="auth-form">
+            <div class="two-col">
+              <label>
+                <span>First name</span>
+                <input id="register-first-name" type="text" required />
+              </label>
+              <label>
+                <span>Surname</span>
+                <input id="register-surname" type="text" required />
+              </label>
+            </div>
+            <label>
+              <span>Email</span>
+              <input id="register-email" type="email" required />
+            </label>
+            <label>
+              <span>Country</span>
+              <input id="register-country" type="text" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input id="register-password" type="password" minlength="8" required />
+            </label>
+            <button type="submit" class="primary-btn">Register</button>
+          </form>
+        </div>
+
+        <div class="auth-form-panel" id="otp-panel">
+          <h2>Email verification</h2>
+          <p>Enter the 6-digit code sent to your inbox.</p>
+          <form id="otp-form" class="auth-form">
+            <label>
+              <span>Verification code</span>
+              <div class="otp-boxes">
+                <input id="otp-1" class="otp-digit" maxlength="1" inputmode="numeric" />
+                <input id="otp-2" class="otp-digit" maxlength="1" inputmode="numeric" />
+                <input id="otp-3" class="otp-digit" maxlength="1" inputmode="numeric" />
+                <input id="otp-4" class="otp-digit" maxlength="1" inputmode="numeric" />
+                <input id="otp-5" class="otp-digit" maxlength="1" inputmode="numeric" />
+                <input id="otp-6" class="otp-digit" maxlength="1" inputmode="numeric" />
+              </div>
+            </label>
+            <button type="submit" class="primary-btn">Verify</button>
+          </form>
+          <button type="button" class="text-button" id="back-to-login">Back to login</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+  </body>
+</html>

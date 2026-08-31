@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | Currency Exchange Tracker</title>
+    <link rel="stylesheet" href="/static/css/styles.css" />
+  </head>
+  <body class="dashboard-body">
+    <div class="dashboard-shell">
+      <aside class="sidebar card">
+        <div class="brand-row compact">
+          <div class="brand-mark">$</div>
+          <div>
+            <p class="eyebrow">Market monitor</p>
+            <h3>Tracker</h3>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-pill active">Overview</button>
+          <button class="nav-pill">Portfolio</button>
+          <button class="nav-pill">Alerts</button>
+        </nav>
+
+        <div class="mini-panel">
+          <p class="label">Favorite pairs</p>
+          <div class="favorite-chips">
+            <button class="chip active" data-pair="USD-ZAR">USD/ZAR</button>
+            <button class="chip" data-pair="EUR-USD">EUR/USD</button>
+            <button class="chip" data-pair="GBP-ZAR">GBP/ZAR</button>
+            <button class="chip" data-pair="JPY-USD">JPY/USD</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-panel">
+        <header class="topbar card">
+          <div>
+            <p class="eyebrow">Live FX dashboard</p>
+            <h2>Currency conversion</h2>
+          </div>
+          <div class="user-badge">
+            <span id="user-name">Guest</span>
+          </div>
+        </header>
+
+        <section class="converter card">
+          <div class="convert-row">
+            <div class="field-block">
+              <label for="amount-input">Amount</label>
+              <input id="amount-input" type="number" min="0" step="0.01" value="1000" maxlength="12" />
+            </div>
+            <div class="currency-field">
+              <label for="base-currency">From</label>
+              <select id="base-currency">
+                <option value="USD">USD</option>
+                <option value="ZAR">ZAR</option>
+                <option value="EUR">EUR</option>
+                <option value="JPY">JPY</option>
+                <option value="GBP">GBP</option>
+                <option value="CHF">CHF</option>
+                <option value="AUD">AUD</option>
+                <option value="CAD">CAD</option>
+              </select>
+            </div>
+            <button id="swap-currency" class="swap-btn" aria-label="Swap currencies">⇄</button>
+            <div class="currency-field">
+              <label for="target-currency">To</label>
+              <select id="target-currency">
+                <option value="ZAR">ZAR</option>
+                <option value="USD">USD</option>
+                <option value="EUR">EUR</option>
+                <option value="JPY">JPY</option>
+                <option value="GBP">GBP</option>
+                <option value="CHF">CHF</option>
+                <option value="AUD">AUD</option>
+                <option value="CAD">CAD</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="result-bar">
+            <div>
+              <span class="result-label">Live rate</span>
+              <strong id="rate-badge">1 USD = 18.20 ZAR</strong>
+            </div>
+            <div class="status-dot-wrap">
+              <span class="status-dot online"></span>
+              <span id="rate-source">Live</span>
+            </div>
+          </div>
+
+          <div class="output-row">
+            <div>
+              <p class="label">Converted amount</p>
+              <h1 id="converted-output">18,200.00</h1>
+            </div>
+            <button id="convert-button" class="primary-btn">Convert</button>
+          </div>
+        </section>
+
+        <section class="insights grid-two">
+          <div class="card chart-card">
+            <div class="card-header">
+              <h3>Trend</h3>
+              <span>7 day</span>
+            </div>
+            <div id="sparkline" class="sparkline" aria-label="Rate trend graph"></div>
+          </div>
+
+          <div class="card history-card">
+            <div class="card-header">
+              <h3>Recent history</h3>
+              <button class="text-button" id="refresh-rates">Refresh</button>
+            </div>
+            <ul id="history-list" class="history-list">
+              <li>1,000 USD → ZAR = 18,200.00</li>
+              <li>500 EUR → USD = 545.00</li>
+              <li>250 GBP → ZAR = 4,800.00</li>
+            </ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/static/js/main.js"></script>
+  </body>
+</html>
