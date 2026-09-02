@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+import sys
 from fastapi.testclient import TestClient
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -12,6 +13,7 @@ from app.database import Base
 from app.main import app
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
 
 engine = create_engine("sqlite:///./test_currency.db", connect_args={"check_same_thread": False})
