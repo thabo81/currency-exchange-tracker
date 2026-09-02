@@ -1,8 +1,11 @@
 import os
+import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
 import pytest
-import sys
 from fastapi.testclient import TestClient
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -12,8 +15,6 @@ from sqlalchemy.orm import sessionmaker
 from app.database import Base
 from app.main import app
 
-ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(ROOT))
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
 
 engine = create_engine("sqlite:///./test_currency.db", connect_args={"check_same_thread": False})
@@ -35,7 +36,7 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture(scope="session")
-def base_url(request):
+def base_url(request: pytest.FixtureRequest):
     cli_value = request.config.getoption("--base-url")
     if cli_value:
         return cli_value.rstrip("/")
