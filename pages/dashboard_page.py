@@ -14,8 +14,9 @@ class DashboardPage(BasePage):
     RATE_SOURCE = (By.ID, "rate-source")
     HISTORY_LIST = (By.CSS_SELECTOR, "#history-list li")
 
+    
     def open_dashboard(self):
-        self.open("http://localhost:8000/dashboard")
+        self.open(f"{self.base_url}/dashboard")
 
     def enter_amount(self, amount: str):
         self.type(*self.AMOUNT_INPUT, amount)

@@ -19,8 +19,9 @@ class LoginPage(BasePage):
     OTP_SUBMIT = (By.CSS_SELECTOR, "#otp-form button[type='submit']")
     BACK_TO_LOGIN = (By.ID, "back-to-login")
 
+   
     def open_login(self):
-        self.open("http://localhost:8000/login")
+        self.open(f"{self.base_url}/login")
 
     def login(self, email: str, password: str, remember_me: bool = False):
         self.type(*self.LOGIN_EMAIL, email)

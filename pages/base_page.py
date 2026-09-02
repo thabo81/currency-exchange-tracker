@@ -4,8 +4,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 
 
 class BasePage:
-    def __init__(self, driver):
+    def __init__(self, driver, base_url="http://localhost:8000"):
         self.driver = driver
+        self.base_url = base_url
         self.wait = WebDriverWait(driver, 15)
 
     def open(self, url: str):

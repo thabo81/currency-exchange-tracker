@@ -23,6 +23,21 @@ database_module.engine = engine
 database_module.SessionLocal = TestingSessionLocal
 Base.metadata.create_all(bind=engine)
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--base-url",
+        action="store",
+        default=None,
+        help="Base URL of the application under test",
+    )
+
+
+@pytest.fixture(scope="session")
+def base_url(request):
+    cli_value = request.config.getoption("--base-url")
+    if cli_value:
+        return cli_value.rstrip("/")
+    return os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 
 @pytest.fixture(scope="function")
 def client():

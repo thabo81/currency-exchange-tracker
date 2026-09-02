@@ -2,24 +2,27 @@ import time
 
 import pytest
 
+from pages.login_page import LoginPage
+from pages.dashboard_page import DashboardPage
 
-@pytest.mark.skip(reason="Selenium UI smoke tests require a local running server and ChromeDriver.")
-def test_currency_conversion_ui(browser):
-    browser.get("http://localhost:8000")
+
+def test_currency_conversion_ui(browser, base_url):
+    login_page = LoginPage(browser, base_url)
+    login_page.open_login()
     time.sleep(1)
     assert "Currency Exchange" in browser.page_source
 
-    browser.get("http://localhost:8000/dashboard")
-    time.sleep(1)
-    amount_input = browser.find_element("id", "amount-input")
-    amount_input.clear()
-    amount_input.send_keys("1000")
-    browser.find_element("id", "convert-button").click()
+    dashboard_page = DashboardPage(browser, base_url)
+    dashboard_page.open_dashboard()
     time.sleep(1)
 
-    value = browser.find_element("id", "converted-output").text
+    dashboard_page.enter_amount("1000")
+    dashboard_page.convert()
+    time.sleep(1)
+
+    value = dashboard_page.get_converted_output()
     assert value
 
-    browser.find_element("id", "swap-currency").click()
+    dashboard_page.swap_currencies()
     time.sleep(1)
-    assert browser.find_element("id", "converted-output").text
+    assert dashboard_page.get_converted_output()
