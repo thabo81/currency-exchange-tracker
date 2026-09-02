@@ -1,0 +1,1 @@
+nano docs/DEFECT_LOG
