@@ -193,3 +193,353 @@ document.addEventListener("DOMContentLoaded", () => {
   initAuthFlow();
   initDashboard();
 });
+/* ---------- APPEND all of this to the end of static/js/main.js ---------- */
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/* ---------- Panel switching (Overview / Portfolio / Alerts) ---------- */
+
+function initPanelSwitching() {
+  const pills = document.querySelectorAll(".nav-pill[data-panel]");
+  if (!pills.length) return;
+
+  pills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      pills.forEach((p) => p.classList.toggle("active", p === pill));
+
+      document.querySelectorAll(".dashboard-panel").forEach((panel) => {
+        panel.hidden = panel.id !== pill.dataset.panel;
+      });
+
+      if (pill.dataset.panel === "portfolio-panel") loadPortfolio();
+      if (pill.dataset.panel === "alerts-panel") loadAlerts();
+    });
+  });
+}
+
+/* ---------- Favorites ---------- */
+
+async function loadFavorites() {
+  const container = document.getElementById("favorite-chips");
+  if (!container) return;
+
+  if (!getToken()) {
+    container.innerHTML = `<p class="label">Log in to save favorite pairs</p>`;
+    return;
+  }
+
+  try {
+    const favorites = await requestJson(`${API_BASE}/favorites`, { headers: authHeaders() });
+    container.innerHTML = "";
+    favorites.forEach((fav) => {
+      const chip = document.createElement("button");
+      chip.className = "chip";
+      chip.dataset.pair = `${fav.base_currency}-${fav.quote_currency}`;
+      chip.textContent = `${fav.base_currency}/${fav.quote_currency} ✕`;
+      chip.addEventListener("click", async () => {
+        await requestJson(`${API_BASE}/favorites/${fav.id}`, { method: "DELETE", headers: authHeaders() });
+        loadFavorites();
+      });
+      container.appendChild(chip);
+    });
+    updateFavoriteStar();
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+async function updateFavoriteStar() {
+  const star = document.getElementById("favorite-toggle");
+  if (!star || !getToken()) return;
+
+  const base = document.getElementById("base-currency").value;
+  const quote = document.getElementById("target-currency").value;
+
+  try {
+    const favorites = await requestJson(`${API_BASE}/favorites`, { headers: authHeaders() });
+    const match = favorites.find((f) => f.base_currency === base && f.quote_currency === quote);
+    star.textContent = match ? "★" : "☆";
+    star.dataset.favoriteId = match ? match.id : "";
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function initFavoriteToggle() {
+  const star = document.getElementById("favorite-toggle");
+  if (!star) return;
+
+  star.addEventListener("click", async () => {
+    if (!getToken()) {
+      alert("Please log in to save favorites.");
+      return;
+    }
+
+    const base = document.getElementById("base-currency").value;
+    const quote = document.getElementById("target-currency").value;
+
+    try {
+      if (star.dataset.favoriteId) {
+        await requestJson(`${API_BASE}/favorites/${star.dataset.favoriteId}`, {
+          method: "DELETE",
+          headers: authHeaders(),
+        });
+      } else {
+        await requestJson(`${API_BASE}/favorites`, {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ base_currency: base, quote_currency: quote }),
+        });
+      }
+      loadFavorites();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
+/* ---------- Portfolio ---------- */
+
+async function loadPortfolio() {
+  const list = document.getElementById("portfolio-list");
+  if (!list) return;
+
+  if (!getToken()) {
+    list.innerHTML = "<li>Please log in to see your portfolio.</li>";
+    return;
+  }
+
+  try {
+    const holdings = await requestJson(`${API_BASE}/portfolio`, { headers: authHeaders() });
+    list.innerHTML = "";
+    if (!holdings.length) {
+      list.innerHTML = "<li>No holdings yet.</li>";
+      return;
+    }
+    holdings.forEach((h) => {
+      const li = document.createElement("li");
+      li.textContent = `${h.amount_held} ${h.currency}${h.notes ? " — " + h.notes : ""}`;
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "text-button";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", async () => {
+        await requestJson(`${API_BASE}/portfolio/${h.id}`, { method: "DELETE", headers: authHeaders() });
+        loadPortfolio();
+      });
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function initPortfolioForm() {
+  const form = document.getElementById("portfolio-form");
+  if (!form) return;
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!getToken()) {
+      alert("Please log in first.");
+      return;
+    }
+
+    const payload = {
+      currency: document.getElementById("portfolio-currency").value.toUpperCase(),
+      amount_held: Number(document.getElementById("portfolio-amount").value),
+      notes: document.getElementById("portfolio-notes").value || null,
+    };
+
+    try {
+      await requestJson(`${API_BASE}/portfolio`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      form.reset();
+      loadPortfolio();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
+/* ---------- Alerts ---------- */
+
+function populateAlertCurrencyOptions() {
+  const sourceSelect = document.getElementById("base-currency");
+  const alertBase = document.getElementById("alert-base");
+  const alertQuote = document.getElementById("alert-quote");
+  if (!sourceSelect || !alertBase || !alertQuote) return;
+
+  alertBase.innerHTML = sourceSelect.innerHTML;
+  alertQuote.innerHTML = sourceSelect.innerHTML;
+  alertQuote.value = "ZAR";
+}
+
+async function loadAlerts() {
+  const list = document.getElementById("alerts-list");
+  if (!list) return;
+
+  if (!getToken()) {
+    list.innerHTML = "<li>Please log in to see your alerts.</li>";
+    return;
+  }
+
+  try {
+    const alerts = await requestJson(`${API_BASE}/alerts`, { headers: authHeaders() });
+    list.innerHTML = "";
+    if (!alerts.length) {
+      list.innerHTML = "<li>No alerts yet.</li>";
+      return;
+    }
+    alerts.forEach((a) => {
+      const li = document.createElement("li");
+      const status = a.triggered ? "Triggered" : "Watching";
+      li.textContent = `${a.base_currency}/${a.quote_currency} ${a.direction} ${a.target_rate} — ${status}`;
+      const removeBtn = document.createElement("button");
+      removeBtn.className = "text-button";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", async () => {
+        await requestJson(`${API_BASE}/alerts/${a.id}`, { method: "DELETE", headers: authHeaders() });
+        loadAlerts();
+      });
+      li.appendChild(removeBtn);
+      list.appendChild(li);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+function initAlertForm() {
+  const form = document.getElementById("alert-form");
+  if (!form) return;
+
+  populateAlertCurrencyOptions();
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!getToken()) {
+      alert("Please log in first.");
+      return;
+    }
+
+    const payload = {
+      base_currency: document.getElementById("alert-base").value,
+      quote_currency: document.getElementById("alert-quote").value,
+      direction: document.getElementById("alert-direction").value,
+      target_rate: Number(document.getElementById("alert-target").value),
+    };
+
+    try {
+      await requestJson(`${API_BASE}/alerts`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(payload),
+      });
+      form.reset();
+      loadAlerts();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
+}
+
+/* ---------- Recent history (real data instead of the hardcoded 3 lines) ---------- */
+
+async function loadHistory() {
+  const list = document.getElementById("history-list");
+  if (!list) return;
+
+  if (!getToken()) {
+    list.innerHTML = "<li>Log in to see your conversion history.</li>";
+    return;
+  }
+
+  try {
+    const history = await requestJson(`${API_BASE}/history/recent?limit=10`, { headers: authHeaders() });
+    list.innerHTML = "";
+    if (!history.length) {
+      list.innerHTML = "<li>No conversions yet.</li>";
+      return;
+    }
+    history.forEach((h) => {
+      const li = document.createElement("li");
+      li.textContent = `${h.amount} ${h.base_currency} → ${h.quote_currency} = ${h.converted_amount}`;
+      list.appendChild(li);
+    });
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+document.getElementById("refresh-rates")?.addEventListener("click", loadHistory);
+
+/* ---------- Trends sparkline (simple inline SVG line chart, no chart library needed) ---------- */
+
+async function loadTrend() {
+  const container = document.getElementById("sparkline");
+  if (!container) return;
+
+  const base = document.getElementById("base-currency")?.value || "USD";
+  const quote = document.getElementById("target-currency")?.value || "ZAR";
+
+  try {
+    const points = await requestJson(`${API_BASE}/trends/${base}/${quote}?days=7`);
+    if (!points.length) {
+      container.innerHTML = `<p class="label">Not enough trend data yet — check back after the next rate poll.</p>`;
+      return;
+    }
+
+    const rates = points.map((p) => p.rate);
+    const min = Math.min(...rates);
+    const max = Math.max(...rates);
+    const range = max - min || 1;
+
+    const width = 600;
+    const height = 160;
+    const stepX = width / Math.max(points.length - 1, 1);
+
+    const coords = rates.map((rate, i) => {
+      const x = i * stepX;
+      const y = height - ((rate - min) / range) * height;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
+    });
+
+    container.innerHTML = `
+      <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%;height:100%;">
+        <polyline points="${coords.join(" ")}" fill="none" stroke="currentColor" stroke-width="2" />
+      </svg>
+    `;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+/* ---------- Wire everything up ---------- */
+
+document.addEventListener("DOMContentLoaded", () => {
+  initPanelSwitching();
+  initFavoriteToggle();
+  initPortfolioForm();
+  initAlertForm();
+  loadFavorites();
+  loadHistory();
+  loadTrend();
+
+  // Keep the star and trend in sync whenever the pair changes
+  document.getElementById("base-currency")?.addEventListener("change", () => {
+    updateFavoriteStar();
+    loadTrend();
+  });
+  document.getElementById("target-currency")?.addEventListener("change", () => {
+    updateFavoriteStar();
+    loadTrend();
+  });
+  document.getElementById("convert-button")?.addEventListener("click", loadHistory);
+});

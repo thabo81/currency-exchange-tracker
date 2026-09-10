@@ -22,9 +22,13 @@ from app.auth import (
     verify_password,
 )
 from app.database import Base, engine, get_db
-from app.models import RateCache, User, UserSession
+from app.models import ConversionHistory, RateCache, User, UserSession
 from app.schemas import ConvertRequest, UserLoginRequest, UserRegisterRequest, VerifyOtpRequest
 from app.services import convert_currency, get_rate_snapshot
+
+from app.dependencies import get_optional_user
+from app.rate_history_job import start_scheduler
+from app.routers.features import router as features_router
 
 APP_DIR = os.path.dirname(os.path.abspath(__file__))
 STATIC_DIR = os.path.join(APP_DIR, "static")
@@ -38,6 +42,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.include_router(features_router) 
+
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
@@ -47,6 +53,7 @@ OTP_STORE: dict[str, str] = {}
 @app.on_event("startup")
 def startup() -> None:
     Base.metadata.create_all(bind=engine)
+    start_scheduler()
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -148,8 +155,24 @@ def get_rates(base_currency: str = "USD"):
 
 
 @app.post("/convert")
-def convert(payload: ConvertRequest):
+def convert(
+    payload: ConvertRequest,
+    db: Session = Depends(get_db),
+    user: User | None = Depends(get_optional_user),
+):
     converted_amount, rate, source = convert_currency(float(payload.amount), payload.from_currency, payload.to_currency)
+
+    history_entry = ConversionHistory(
+        user_id=user.user_id if user else None,
+        base_currency=payload.from_currency.upper(),
+        quote_currency=payload.to_currency.upper(),
+        amount=float(payload.amount),
+        converted_amount=round(converted_amount, 4),
+        rate_used=round(rate, 6),
+    )
+    db.add(history_entry)
+    db.commit()
+
     return {
         "amount": float(payload.amount),
         "from_currency": payload.from_currency.upper(),

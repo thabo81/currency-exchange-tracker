@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import uuid4
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
@@ -42,3 +42,59 @@ class RateCache(Base):
     base_currency = Column(String(10), nullable=False, index=True)
     rates = Column(Text, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class FavoritePair(Base):
+    __tablename__ = "favorite_pairs"
+
+    favorite_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    base_currency = Column(String(10), nullable=False)
+    quote_currency = Column(String(10), nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class ConversionHistory(Base):
+    __tablename__ = "conversion_history"
+
+    history_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=True, index=True)
+    base_currency = Column(String(10), nullable=False)
+    quote_currency = Column(String(10), nullable=False)
+    amount = Column(Float, nullable=False)
+    converted_amount = Column(Float, nullable=False)
+    rate_used = Column(Float, nullable=False)
+    timestamp = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class PortfolioHolding(Base):
+    __tablename__ = "portfolio_holdings"
+
+    holding_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    currency = Column(String(10), nullable=False)
+    amount_held = Column(Float, nullable=False)
+    notes = Column(String(255), nullable=True)
+
+
+class Alert(Base):
+    __tablename__ = "alerts"
+
+    alert_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    base_currency = Column(String(10), nullable=False)
+    quote_currency = Column(String(10), nullable=False)
+    target_rate = Column(Float, nullable=False)
+    direction = Column(String(10), nullable=False)  # "above" or "below"
+    triggered = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
+
+
+class FxRateHistory(Base):
+    __tablename__ = "fx_rate_history"
+
+    snapshot_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
+    base_currency = Column(String(10), nullable=False, index=True)
+    quote_currency = Column(String(10), nullable=False, index=True)
+    rate = Column(Float, nullable=False)
+    recorded_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False, index=True)

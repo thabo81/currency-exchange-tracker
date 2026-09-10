@@ -44,3 +44,20 @@ class ConversionResponse(BaseModel):
     converted_amount: float
     rate: float
     source: str
+
+class FavoritePairRequest(BaseModel):
+    base_currency: str
+    quote_currency: str
+
+
+class PortfolioHoldingRequest(BaseModel):
+    currency: str
+    amount_held: float
+    notes: Optional[str] = None
+
+
+class AlertRequest(BaseModel):
+    base_currency: str
+    quote_currency: str
+    target_rate: float
+    direction: str  # "above" or "below"
