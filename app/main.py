@@ -179,9 +179,8 @@ def convert(
         "to_currency": payload.to_currency.upper(),
         "converted_amount": round(converted_amount, 4),
         "rate": round(rate, 6),
-        "source": source,
+        "source": source
     }
-
 
 @app.post("/refresh-token")
 def refresh_token(token: str):
