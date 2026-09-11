@@ -418,3 +418,24 @@ input:focus, select:focus {
     align-items: flex-start;
   }
 }
+
+/* APPEND to styles.css */
+
+/* Fix: accommodate the new favorite-toggle star button as a 5th column */
+.convert-row {
+  grid-template-columns: minmax(0, 1.4fr) minmax(140px, 0.8fr) auto auto minmax(140px, 0.8fr);
+}
+
+/* New: flexible row for Portfolio/Alert forms (variable field counts,
+   so a fixed grid like .convert-row would misalign them) */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 16px;
+  align-items: end;
+}
+
+/* Fix: give Portfolio/Alerts panels the same breathing room every other card gets */
+#portfolio-panel, #alerts-panel {
+  padding: 20px 18px;
+}
