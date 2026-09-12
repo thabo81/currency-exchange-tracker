@@ -60,4 +60,12 @@ class AlertRequest(BaseModel):
     base_currency: str
     quote_currency: str
     target_rate: float
-    direction: str  # "above" or "below"
+    direction: str  
+
+class VerifyChallengeRequest(BaseModel):
+    email: EmailStr
+    code: str
+
+
+class ResendChallengeRequest(BaseModel):
+    email: EmailStr
