@@ -15,15 +15,21 @@ from app.auth import (
     create_access_token,
     create_refresh_token,
     decode_token,
-    generate_otp,
     hash_password,
     hash_token,
-    send_otp_email,
+    send_challenge_email,
     verify_password,
 )
 from app.database import Base, engine, get_db
 from app.models import ConversionHistory, RateCache, User, UserSession
-from app.schemas import ConvertRequest, UserLoginRequest, UserRegisterRequest, VerifyOtpRequest
+from app.schemas import (
+    ConvertRequest,
+    ResendChallengeRequest,
+    UserLoginRequest,
+    UserRegisterRequest,
+    VerifyChallengeRequest,
+)
+from app.verification import create_challenge, resend_challenge, verify_challenge
 from app.services import convert_currency, get_rate_snapshot
 
 from app.dependencies import get_optional_user
@@ -47,7 +53,7 @@ app.include_router(features_router)
 app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 templates = Jinja2Templates(directory=TEMPLATE_DIR)
 
-OTP_STORE: dict[str, str] = {}
+
 
 
 @app.on_event("startup")
@@ -76,10 +82,6 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=409, detail="User already exists")
 
-    otp = generate_otp()
-    OTP_STORE[normalized_email] = otp
-    send_otp_email(normalized_email, otp)
-
     user = User(
         email=normalized_email,
         password_hash=hash_password(payload.password),
@@ -92,24 +94,45 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
 
-    return {"message": "Registration successful. Please verify your OTP.", "email": normalized_email, "otp": otp}
+    code = create_challenge(normalized_email)
+    send_challenge_email(normalized_email, code)
+
+    return {
+        "message": "Registration successful. Enter the verification code sent to your email within 90 seconds.",
+        "email": normalized_email,
+    }
 
 
-@app.post("/verify-otp")
-def verify_otp(payload: VerifyOtpRequest, db: Session = Depends(get_db)):
+@app.post("/verify-code")
+def verify_code(payload: VerifyChallengeRequest, db: Session = Depends(get_db)):
     normalized_email = payload.email.lower().strip()
     user = db.query(User).filter(User.email == normalized_email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    stored_otp = OTP_STORE.get(normalized_email)
-    if stored_otp != payload.otp:
-        raise HTTPException(status_code=401, detail="Invalid OTP")
+    if not verify_challenge(normalized_email, payload.code):
+        raise HTTPException(status_code=400, detail="Invalid or expired code")
 
     user.is_verified = True
     db.commit()
-    del OTP_STORE[normalized_email]
-    return {"message": "OTP verified successfully", "email": normalized_email}
+    return {"message": "Account verified successfully", "email": normalized_email}
+
+
+@app.post("/resend-code")
+def resend_code(payload: ResendChallengeRequest, db: Session = Depends(get_db)):
+    normalized_email = payload.email.lower().strip()
+    user = db.query(User).filter(User.email == normalized_email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="Account already verified")
+
+    code = resend_challenge(normalized_email)
+    if code is None:
+        raise HTTPException(status_code=429, detail="Maximum resend attempts reached")
+
+    send_challenge_email(normalized_email, code)
+    return {"message": "Code resent"}
 
 
 @app.post("/login")
