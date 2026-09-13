@@ -71,24 +71,33 @@
         </div>
 
         <div class="auth-form-panel" id="otp-panel">
-          <h2>Email verification</h2>
-          <p>Enter the 6-digit code sent to your inbox.</p>
-          <form id="otp-form" class="auth-form">
-            <label>
-              <span>Verification code</span>
-              <div class="otp-boxes">
-                <input id="otp-1" class="otp-digit" maxlength="1" inputmode="numeric" />
-                <input id="otp-2" class="otp-digit" maxlength="1" inputmode="numeric" />
-                <input id="otp-3" class="otp-digit" maxlength="1" inputmode="numeric" />
-                <input id="otp-4" class="otp-digit" maxlength="1" inputmode="numeric" />
-                <input id="otp-5" class="otp-digit" maxlength="1" inputmode="numeric" />
-                <input id="otp-6" class="otp-digit" maxlength="1" inputmode="numeric" />
-              </div>
-            </label>
-            <button type="submit" class="primary-btn">Verify</button>
-          </form>
-          <button type="button" class="text-button" id="back-to-login">Back to login</button>
-        </div>
+  <h2>Email verification</h2>
+  <p>Enter the 6-character code sent to your inbox before the timer runs out.</p>
+ 
+  <div class="row between">
+    <span class="label">Time remaining</span>
+    <strong id="otp-timer">90</strong>
+  </div>
+ 
+  <form id="otp-form" class="auth-form">
+    <label>
+      <span>Verification code</span>
+      <div class="otp-boxes">
+        <input id="otp-1" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-2" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-3" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-4" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-5" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-6" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+      </div>
+    </label>
+    <p id="otp-error" class="label" style="color: var(--danger); display: none;"></p>
+    <button type="submit" class="primary-btn">Verify</button>
+  </form>
+ 
+  <button type="button" class="text-button" id="resend-code-btn">Resend code</button>
+  <button type="button" class="text-button" id="back-to-login">Back to login</button>
+</div>
       </div>
     </div>
 
