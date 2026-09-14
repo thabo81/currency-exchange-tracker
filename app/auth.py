@@ -14,7 +14,8 @@ JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 30
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+TURBOSMTP_USERNAME = os.getenv("TURBOSMTP_USERNAME")  # Consumer Key
+TURBOSMTP_PASSWORD = os.getenv("TURBOSMTP_PASSWORD")  # Consumer Secret
 SENDER_EMAIL = os.getenv("SENDER_EMAIL")
  
 
@@ -50,27 +51,26 @@ def generate_otp() -> str:
 
 
 def send_challenge_email(email: str, code: str) -> None:
-        if not SENDGRID_API_KEY or not SENDER_EMAIL:
-            print(f"[send_challenge_email] Missing SENDGRID_API_KEY/SENDER_EMAIL — printing instead: {email} => {code}")
-            return
- 
-        message = MIMEText(
-            f"Your verification code is: {code}\n\n"
-            f"This code expires in 30 seconds — enter it in the app right away."
-        )
-        message["Subject"] = "Your Currency Tracker verification code"
-        message["From"] = SENDER_EMAIL
-        message["To"] = email
- 
-        try:
-            with smtplib.SMTP("smtp.sendgrid.net", 587) as server:
-                server.starttls()
-                server.login("apikey", SENDGRID_API_KEY)
-                server.sendmail(SENDER_EMAIL, [email], message.as_string())
-        except Exception as exc:
-            print(f"[send_challenge_email] Failed to send to {email}: {exc}")
-            raise
- 
+    if not TURBOSMTP_USERNAME or not TURBOSMTP_PASSWORD or not SENDER_EMAIL:
+        print(f"[send_challenge_email] Missing turboSMTP env vars — printing instead: {email} => {code}")
+        return
+
+    message = MIMEText(
+        f"Your verification code is: {code}\n\n"
+        f"This code expires in 90 seconds — enter it in the app right away."
+    )
+    message["Subject"] = "Your Currency Tracker verification code"
+    message["From"] = SENDER_EMAIL
+    message["To"] = email
+
+    try:
+        with smtplib.SMTP("pro.turbo-smtp.com", 587) as server:
+            server.starttls()
+            server.login(TURBOSMTP_USERNAME, TURBOSMTP_PASSWORD)
+            server.sendmail(SENDER_EMAIL, [email], message.as_string())
+    except Exception as exc:
+        print(f"[send_challenge_email] Failed to send to {email}: {exc}")
+        raise
 
 
 def hash_token(token: str) -> str:
