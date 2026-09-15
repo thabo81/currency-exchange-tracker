@@ -65,3 +65,19 @@ def browser():
 
     yield driver
     driver.quit()
+
+@pytest.fixture
+def captured_emails(monkeypatch):
+    """
+    Intercepts send_challenge_email so tests can grab the real code
+    without needing an actual inbox. This is the standard pattern for
+    testing anything delivered out-of-band (email, SMS) — mock the
+    delivery function and capture what it was called with.
+    """
+    sent = []
+ 
+    def fake_send_challenge_email(email, code):
+        sent.append({"email": email, "code": code})
+ 
+    monkeypatch.setattr("app.main.send_challenge_email", fake_send_challenge_email)
+    return sent
