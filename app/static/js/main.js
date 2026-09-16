@@ -22,19 +22,55 @@ function fillOTPInputs() {
   const otpInputs = [...document.querySelectorAll(".otp-digit")];
   otpInputs.forEach((input, index) => {
     input.addEventListener("input", (event) => {
-      const value = event.target.value.replace(/\D/g, "").slice(0, 1);
+      // allow letters + digits now (was digits-only before)
+      const value = event.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 1).toUpperCase();
       event.target.value = value;
       if (value && index < otpInputs.length - 1) {
         otpInputs[index + 1].focus();
       }
     });
-
+ 
     input.addEventListener("keydown", (event) => {
       if (event.key === "Backspace" && !input.value && index > 0) {
         otpInputs[index - 1].focus();
       }
     });
   });
+}
+ 
+let countdownInterval = null;
+ 
+function startCountdown(seconds = 90) {
+  clearInterval(countdownInterval);
+  let remaining = seconds;
+ 
+  const timerEl = document.getElementById("otp-timer");
+  const otpInputs = [...document.querySelectorAll(".otp-digit")];
+  const resendBtn = document.getElementById("resend-code-btn");
+  const errorEl = document.getElementById("otp-error");
+ 
+  errorEl.style.display = "none";
+  otpInputs.forEach((input) => {
+    input.disabled = false;
+    input.value = "";
+  });
+  otpInputs[0]?.focus();
+  resendBtn.disabled = false;
+  resendBtn.textContent = "Resend code";
+ 
+  timerEl.textContent = remaining;
+ 
+  countdownInterval = setInterval(() => {
+    remaining -= 1;
+    timerEl.textContent = remaining;
+ 
+    if (remaining <= 0) {
+      clearInterval(countdownInterval);
+      otpInputs.forEach((input) => (input.disabled = true));
+      errorEl.textContent = "Code expired — click Resend code to get a new one.";
+      errorEl.style.display = "block";
+    }
+  }, 1000);
 }
 
 async function requestJson(url, options = {}) {
