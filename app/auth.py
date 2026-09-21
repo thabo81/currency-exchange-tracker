@@ -1,9 +1,10 @@
 
 import os
 import secrets
-import smtplib
+import json
 
-from email.mime.text import MIMEText
+from urllib.request import Request, urlopen
+from urllib.error import URLError, HTTPError
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
@@ -50,27 +51,42 @@ def generate_otp() -> str:
     return str(secrets.randbelow(1_000_000)).zfill(6)
 
 
+TURBOSMTP_API_URL = "https://api.turbo-smtp.com/api/v2/mail/send"
+ 
+ 
 def send_challenge_email(email: str, code: str) -> None:
-    if not TURBOSMTP_USERNAME or not TURBOSMTP_PASSWORD or not SENDER_EMAIL:
-        print(f"[send_challenge_email] Missing turboSMTP env vars — printing instead: {email} => {code}")
-        return
-
-    message = MIMEText(
-        f"Your verification code is: {code}\n\n"
-        f"This code expires in 90 seconds — enter it in the app right away."
-    )
-    message["Subject"] = "Your Currency Tracker verification code"
-    message["From"] = SENDER_EMAIL
-    message["To"] = email
-
-    try:
-        with smtplib.SMTP("pro.turbo-smtp.com", 587) as server:
-            server.starttls()
-            server.login(TURBOSMTP_USERNAME, TURBOSMTP_PASSWORD)
-            server.sendmail(SENDER_EMAIL, [email], message.as_string())
-    except Exception as exc:
-        print(f"[send_challenge_email] Failed to send to {email}: {exc}")
-        raise
+        if not TURBOSMTP_USERNAME or not TURBOSMTP_PASSWORD or not SENDER_EMAIL:
+            print(f"[send_challenge_email] Missing turboSMTP env vars — printing instead: {email} => {code}")
+            return
+ 
+        payload = json.dumps({
+            "from": SENDER_EMAIL,
+            "to": email,
+            "subject": "Your Currency Tracker verification code",
+            "content": (
+                f"Your verification code is: {code}\n\n"
+                f"This code expires in 90 seconds — enter it in the app right away."
+            ),
+        }).encode("utf-8")
+ 
+        request = Request(
+            TURBOSMTP_API_URL,
+            data=payload,
+            method="POST",
+            headers={
+                "Content-Type": "application/json",
+                "consumerKey": TURBOSMTP_USERNAME,
+                "consumerSecret": TURBOSMTP_PASSWORD,
+            },
+        )
+ 
+        try:
+            with urlopen(request, timeout=10) as response:
+                if response.status >= 400:
+                    raise RuntimeError(f"turboSMTP API returned status {response.status}")
+        except (URLError, HTTPError) as exc:
+            print(f"[send_challenge_email] Failed to send to {email}: {exc}")
+            raise
 
 
 def hash_token(token: str) -> str:
