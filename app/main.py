@@ -95,12 +95,19 @@ def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
     db.refresh(user)
 
     code = create_challenge(normalized_email)
-    send_challenge_email(normalized_email, code)
-
+    try:
+        send_challenge_email(normalized_email, code)
+    except Exception:
+        # Account + challenge code are already created/stored even if the
+        # email itself failed to send — the user can retry via /resend-code
+        # once the issue is resolved, rather than getting a hard 500 here.
+        pass
+ 
     return {
         "message": "Registration successful. Enter the verification code sent to your email within 90 seconds.",
         "email": normalized_email,
     }
+    
 
 
 @app.post("/verify-code")
@@ -131,7 +138,13 @@ def resend_code(payload: ResendChallengeRequest, db: Session = Depends(get_db)):
     if code is None:
         raise HTTPException(status_code=429, detail="Maximum resend attempts reached")
 
-    send_challenge_email(normalized_email, code)
+    try:
+        send_challenge_email(normalized_email, code)
+    except Exception:
+        # The new code is already stored server-side even if the email
+        # itself failed to send — don't 500 the whole request for that.
+        pass
+
     return {"message": "Code resent"}
 
 
