@@ -1,5 +1,6 @@
 import os
 import sys
+import httpx
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -81,3 +82,55 @@ def captured_emails(monkeypatch):
  
     monkeypatch.setattr("app.main.send_challenge_email", fake_send_challenge_email)
     return sent
+
+@pytest.fixture
+def authenticated_session(browser, base_url):
+    """
+    Local-only fixture: registers a user via the real API, then verifies
+    them by writing directly to the test database (bypassing the actual
+    email flow, which already has its own dedicated tests in test_auth.py
+    and test_registration_ui.py — this fixture is purely about getting a
+    logged-in session for testing OTHER features, not re-testing verification
+    itself). Logs in via the real API and injects the resulting access_token
+    into the browser's localStorage.
+ 
+    Only works when the Selenium browser is pointed at the SAME database
+    the pytest process can reach directly (i.e. local runs). Not usable
+    against the deployed Render environment.
+    """
+    import uuid
+    from app.database import SessionLocal
+    from app.models import User
+ 
+    email = f"dashboard-{uuid.uuid4().hex[:10]}@example.com"
+    password = "StrongPass1!"
+ 
+    with httpx.Client(base_url=base_url) as client:
+        client.post(
+            "/register",
+            json={
+                "email": email,
+                "password": password,
+                "first_name": "Dash",
+                "surname": "Board",
+                "country": "South Africa",
+            },
+        )
+ 
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.email == email).first()
+        user.is_verified = True
+        db.commit()
+    finally:
+        db.close()
+ 
+    with httpx.Client(base_url=base_url) as client:
+        login_response = client.post("/login", json={"email": email, "password": password})
+        token = login_response.json()["access_token"]
+ 
+    browser.get(f"{base_url}/dashboard")
+    browser.execute_script(f"window.localStorage.setItem('access_token', '{token}');")
+    browser.refresh()
+ 
+    return browser
