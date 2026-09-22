@@ -87,19 +87,21 @@ def captured_emails(monkeypatch):
 def authenticated_session(browser, base_url):
     """
     Local-only fixture: registers a user via the real API, then verifies
-    them by writing directly to the test database (bypassing the actual
-    email flow, which already has its own dedicated tests in test_auth.py
-    and test_registration_ui.py — this fixture is purely about getting a
-    logged-in session for testing OTHER features, not re-testing verification
-    itself). Logs in via the real API and injects the resulting access_token
-    into the browser's localStorage.
+    them by writing directly to the LIVE server's database (bypassing the
+    actual email flow — that's already covered by its own dedicated tests).
+    Logs in via the real API and injects the access_token into the
+    browser's localStorage.
  
-    Only works when the Selenium browser is pointed at the SAME database
-    the pytest process can reach directly (i.e. local runs). Not usable
-    against the deployed Render environment.
+    Deliberately does NOT use app.database.SessionLocal, since conftest.py
+    monkeypatches that to a different database (test_currency.db) for the
+    in-process TestClient tests — this fixture needs to reach whichever
+    database the SEPARATELY RUNNING server process actually uses, read
+    fresh from DATABASE_URL, not the patched module reference.
     """
+    import os
     import uuid
-    from app.database import SessionLocal
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import sessionmaker
     from app.models import User
  
     email = f"dashboard-{uuid.uuid4().hex[:10]}@example.com"
@@ -117,9 +119,18 @@ def authenticated_session(browser, base_url):
             },
         )
  
-    db = SessionLocal()
+    live_db_url = os.getenv("DATABASE_URL", "sqlite:///./ci_currency.db")
+    connect_args = {"check_same_thread": False} if live_db_url.startswith("sqlite") else {}
+    live_engine = create_engine(live_db_url, connect_args=connect_args)
+    LiveSession = sessionmaker(bind=live_engine)
+ 
+    db = LiveSession()
     try:
         user = db.query(User).filter(User.email == email).first()
+        assert user is not None, (
+            f"User {email} not found in {live_db_url} — the live server's "
+            f"DATABASE_URL may not match this fixture's assumption."
+        )
         user.is_verified = True
         db.commit()
     finally:
