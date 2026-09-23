@@ -1,6 +1,6 @@
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-
+from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 
 from pages.base_page import BasePage
@@ -106,9 +106,9 @@ class DashboardPage(BasePage):
         item.find_element(By.CSS_SELECTOR, "button").click()
  
     def add_alert(self, base: str, quote: str, direction: str, target_rate: str):
-        self.driver.find_element(*self.ALERT_BASE).send_keys(base)
-        self.driver.find_element(*self.ALERT_QUOTE).send_keys(quote)
-        self.driver.find_element(*self.ALERT_DIRECTION).send_keys(direction)
+        Select(self.driver.find_element(*self.ALERT_BASE)).select_by_value(base)
+        Select(self.driver.find_element(*self.ALERT_QUOTE)).select_by_value(quote)
+        Select(self.driver.find_element(*self.ALERT_DIRECTION)).select_by_value(direction)
         self.type(*self.ALERT_TARGET_INPUT, target_rate)
         self.click(*self.ALERT_SUBMIT)
  
@@ -124,3 +124,13 @@ class DashboardPage(BasePage):
  
     def get_sparkline_text(self):
         return self.get_text(*self.SPARKLINE)
+
+    def wait_for_favorite_chip_count(self, expected_count: int, timeout: int = 5):
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: len(self.get_favorite_chip_texts()) == expected_count
+        )
+ 
+    def wait_for_list_change(self, get_texts_fn, previous_length: int, timeout: int = 5):
+        WebDriverWait(self.driver, timeout).until(
+            lambda d: len(get_texts_fn()) != previous_length
+        )
