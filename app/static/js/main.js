@@ -78,15 +78,28 @@ async function requestJson(url, options = {}) {
     headers: { "Content-Type": "application/json", ...(options.headers || {}) },
     ...options,
   });
-
+ 
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json") ? await response.json() : await response.text();
-
+ 
   if (!response.ok) {
-    const message = typeof data === "string" ? data : data.detail || "Request failed";
+    let message = "Request failed";
+    if (typeof data === "string") {
+      message = data;
+    } else if (data && typeof data.detail === "string") {
+      message = data.detail;
+    } else if (data && Array.isArray(data.detail)) {
+      // FastAPI/Pydantic 422 validation errors come back as an array of
+      // {loc, msg, type} objects, not a plain string — this used to
+      // produce a useless "[object Object]" alert. Now it shows the
+      // actual field-level messages instead.
+      message = data.detail.map((e) => e.msg || JSON.stringify(e)).join("; ");
+    } else if (data && data.detail) {
+      message = JSON.stringify(data.detail);
+    }
     throw new Error(message);
   }
-
+ 
   return data;
 }
 
