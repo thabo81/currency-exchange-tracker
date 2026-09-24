@@ -54,13 +54,13 @@ def test_portfolio_add_and_remove_holding(authenticated_session, base_url):
 
     before = dashboard.get_portfolio_list_texts()
     dashboard.add_portfolio_holding(currency="USD", amount="500", notes="Test holding")
-    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, len(before))
-
+    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, before)
+ 
     items = dashboard.get_portfolio_list_texts()
     assert any("500" in item and "USD" in item for item in items)
-
+ 
     dashboard.remove_portfolio_item(0)
-    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, len(items))
+    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, items)
 
     items_after = dashboard.get_portfolio_list_texts()
     assert len(items_after) < len(items) or "No holdings" in items_after[0]
@@ -77,17 +77,16 @@ def test_alert_add_and_remove(authenticated_session, base_url):
 
     before = dashboard.get_alerts_list_texts()
     dashboard.add_alert(base="USD", quote="ZAR", direction="above", target_rate="20")
-    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, len(before))
+    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, before)   # <-- change len(before) to before
 
     items = dashboard.get_alerts_list_texts()
     assert any("USD" in item and "ZAR" in item and "20" in item for item in items)
 
     dashboard.remove_alert_item(0)
-    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, len(items))
+    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, items)   # <-- change len(items) to items
 
     items_after = dashboard.get_alerts_list_texts()
     assert len(items_after) < len(items) or "No alerts" in items_after[0]
-
 
 def test_alert_direction_options_present(authenticated_session, base_url):
     dashboard = DashboardPage(authenticated_session, base_url)
