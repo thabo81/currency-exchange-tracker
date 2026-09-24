@@ -1,3 +1,4 @@
+from selenium.common.exceptions import StaleElementReferenceException
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select
@@ -126,11 +127,15 @@ class DashboardPage(BasePage):
         return self.get_text(*self.SPARKLINE)
 
     def wait_for_favorite_chip_count(self, expected_count: int, timeout: int = 5):
-        WebDriverWait(self.driver, timeout).until(
+        WebDriverWait(
+            self.driver, timeout, ignored_exceptions=(StaleElementReferenceException,)
+        ).until(
             lambda d: len(self.get_favorite_chip_texts()) == expected_count
         )
  
     def wait_for_list_change(self, get_texts_fn, previous_texts, timeout: int = 5):
-        WebDriverWait(self.driver, timeout).until(
+        WebDriverWait(
+            self.driver, timeout, ignored_exceptions=(StaleElementReferenceException,)
+        ).until(
             lambda d: get_texts_fn() != previous_texts
         )
