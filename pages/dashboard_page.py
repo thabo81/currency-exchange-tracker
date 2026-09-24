@@ -130,7 +130,7 @@ class DashboardPage(BasePage):
             lambda d: len(self.get_favorite_chip_texts()) == expected_count
         )
  
-    def wait_for_list_change(self, get_texts_fn, previous_length: int, timeout: int = 5):
+    def wait_for_list_change(self, get_texts_fn, previous_texts, timeout: int = 5):
         WebDriverWait(self.driver, timeout).until(
-            lambda d: len(get_texts_fn()) != previous_length
+            lambda d: get_texts_fn() != previous_texts
         )
