@@ -11,15 +11,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
-from app.auth import (
-    create_access_token,
-    create_refresh_token,
-    decode_token,
-    hash_password,
-    hash_token,
-    send_challenge_email,
-    verify_password,
-)
+
 from app.database import Base, engine, get_db
 from app.models import ConversionHistory, RateCache, User, UserSession
 from app.schemas import (
@@ -77,36 +69,30 @@ async def dashboard_page(request: Request):
 
 @app.post("/register")
 def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
-    normalized_email = payload.email.lower().strip()
-    existing = db.query(User).filter(User.email == normalized_email).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="User already exists")
-
-    user = User(
-        email=normalized_email,
-        password_hash=hash_password(payload.password),
-        first_name=payload.first_name,
-        surname=payload.surname,
-        country=payload.country,
-        is_verified=False,
-    )
-    db.add(user)
-    db.commit()
-    db.refresh(user)
-
-    code = create_challenge(normalized_email)
-    try:
-        send_challenge_email(normalized_email, code)
-    except Exception:
-        # Account + challenge code are already created/stored even if the
-        # email itself failed to send — the user can retry via /resend-code
-        # once the issue is resolved, rather than getting a hard 500 here.
-        pass
+        normalized_email = payload.email.lower().strip()
+        existing = db.query(User).filter(User.email == normalized_email).first()
+        if existing:
+            raise HTTPException(status_code=409, detail="User already exists")
  
-    return {
-        "message": "Registration successful. Enter the verification code sent to your email within 90 seconds.",
-        "email": normalized_email,
-    }
+        user = User(
+            email=normalized_email,
+            password_hash=hash_password(payload.password),
+            first_name=payload.first_name,
+            surname=payload.surname,
+            country=payload.country,
+            is_verified=False,
+        )
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+ 
+        code = create_challenge(normalized_email)
+ 
+        return {
+            "message": "Registration successful. Enter the verification code shown below within 90 seconds.",
+            "email": normalized_email,
+            "code": code,
+        }
     
 
 
@@ -127,25 +113,18 @@ def verify_code(payload: VerifyChallengeRequest, db: Session = Depends(get_db)):
 
 @app.post("/resend-code")
 def resend_code(payload: ResendChallengeRequest, db: Session = Depends(get_db)):
-    normalized_email = payload.email.lower().strip()
-    user = db.query(User).filter(User.email == normalized_email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    if user.is_verified:
-        raise HTTPException(status_code=400, detail="Account already verified")
-
-    code = resend_challenge(normalized_email)
-    if code is None:
-        raise HTTPException(status_code=429, detail="Maximum resend attempts reached")
-
-    try:
-        send_challenge_email(normalized_email, code)
-    except Exception:
-        # The new code is already stored server-side even if the email
-        # itself failed to send — don't 500 the whole request for that.
-        pass
-
-    return {"message": "Code resent"}
+        normalized_email = payload.email.lower().strip()
+        user = db.query(User).filter(User.email == normalized_email).first()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        if user.is_verified:
+            raise HTTPException(status_code=400, detail="Account already verified")
+ 
+        code = resend_challenge(normalized_email)
+        if code is None:
+            raise HTTPException(status_code=429, detail="Maximum resend attempts reached")
+ 
+        return {"message": "Code resent", "code": code}
 
 
 @app.post("/login")
