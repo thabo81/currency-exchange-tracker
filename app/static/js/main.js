@@ -146,17 +146,19 @@ function initAuthFlow() {
     };
  
     try {
-      await requestJson(`${API_BASE}/register`, {
+      const result = await requestJson(`${API_BASE}/register`, {
         method: "POST",
         body: JSON.stringify(payload),
       });
+      document.getElementById("displayed-code").textContent = result.code;
       showPanel("otp-panel");
       startCountdown(90);
     } catch (error) {
       alert(error.message);
     }
   });
- 
+}
+
   document.getElementById("otp-form").addEventListener("submit", async (event) => {
     event.preventDefault();
     const code = [...document.querySelectorAll(".otp-digit")].map((input) => input.value).join("");
@@ -177,16 +179,17 @@ function initAuthFlow() {
     }
   });
  
-  document.getElementById("resend-code-btn").addEventListener("click", async () => {
+    document.getElementById("resend-code-btn").addEventListener("click", async () => {
     const email = document.getElementById("register-email").value;
     const resendBtn = document.getElementById("resend-code-btn");
     const errorEl = document.getElementById("otp-error");
  
     try {
-      await requestJson(`${API_BASE}/resend-code`, {
+      const result = await requestJson(`${API_BASE}/resend-code`, {
         method: "POST",
         body: JSON.stringify({ email }),
       });
+      document.getElementById("displayed-code").textContent = result.code;
       startCountdown(90);
     } catch (error) {
       errorEl.textContent = error.message;
@@ -197,7 +200,6 @@ function initAuthFlow() {
       }
     }
   });
-}
 
 function initDashboard() {
   const amountInput = document.getElementById("amount-input");

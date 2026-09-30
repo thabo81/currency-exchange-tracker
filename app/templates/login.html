@@ -71,13 +71,40 @@
         </div>
 
         <div class="auth-form-panel" id="otp-panel">
-  <h2>Email verification</h2>
-  <p>Enter the 6-character code sent to your inbox before the timer runs out.</p>
+  <div class="auth-form-panel" id="otp-panel">
+  <h2>Verification</h2>
+  <p>Enter the code shown below before the timer runs out.</p>
  
-  <div class="row between">
-    <span class="label">Time remaining</span>
-    <strong id="otp-timer">90</strong>
+  <div class="result-bar">
+    <div>
+      <span class="result-label">Your verification code</span>
+      <strong id="displayed-code" style="font-size: 1.6rem; letter-spacing: 0.25em;">------</strong>
+    </div>
+    <div class="status-dot-wrap">
+      <span class="label">Time remaining</span>
+      <strong id="otp-timer">90</strong>
+    </div>
   </div>
+ 
+  <form id="otp-form" class="auth-form">
+    <label>
+      <span>Re-enter the code above</span>
+      <div class="otp-boxes">
+        <input id="otp-1" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-2" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-3" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-4" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-5" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+        <input id="otp-6" class="otp-digit" maxlength="1" inputmode="text" autocapitalize="characters" />
+      </div>
+    </label>
+    <p id="otp-error" class="label" style="color: var(--danger); display: none;"></p>
+    <button type="submit" class="primary-btn">Verify</button>
+  </form>
+ 
+  <button type="button" class="text-button" id="resend-code-btn">Resend code</button>
+  <button type="button" class="text-button" id="back-to-login">Back to login</button>
+</div>
  
   <form id="otp-form" class="auth-form">
     <label>
