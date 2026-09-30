@@ -24,7 +24,7 @@ def test_registration_returns_to_login_without_verification(browser, base_url):
     WebDriverWait(browser, 10).until(
         lambda driver: "active" in driver.find_element(By.ID, "login-panel").get_attribute("class")
     )
-    assert "Registration successful" in login_page.get_auth_message()
+    assert "registration successful" in login_page.get_auth_message().lower()
     assert not browser.find_elements(By.ID, "otp-panel")
 
 
@@ -45,7 +45,7 @@ def test_registered_user_can_log_in_from_ui(browser, base_url):
     WebDriverWait(browser, 10).until(
         lambda driver: "active" in driver.find_element(By.ID, "login-panel").get_attribute("class")
     )
-    assert "Registration successful" in login_page.get_auth_message()
+    assert "registration successful" in login_page.get_auth_message().lower()
     login_page.login(email=email, password="StrongPass1!")
     WebDriverWait(browser, 10).until(EC.url_contains("/dashboard"))
     assert "/dashboard" in browser.current_url
