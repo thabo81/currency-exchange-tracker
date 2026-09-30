@@ -19,11 +19,6 @@ class UserLoginRequest(BaseModel):
     remember_me: bool = False
 
 
-class VerifyOtpRequest(BaseModel):
-    email: EmailStr
-    otp: str = Field(..., min_length=6, max_length=6)
-
-
 class RateResponse(BaseModel):
     base_currency: str
     rates: Dict[str, float]
@@ -60,12 +55,4 @@ class AlertRequest(BaseModel):
     base_currency: str
     quote_currency: str
     target_rate: float
-    direction: str  
-
-class VerifyChallengeRequest(BaseModel):
-    email: EmailStr
-    code: str
-
-
-class ResendChallengeRequest(BaseModel):
-    email: EmailStr
+    direction: str

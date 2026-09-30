@@ -4,7 +4,7 @@
 **Test Plan ID:** CET-TP-01
 **Prepared by:** Thabo Addy Mahlangu
 **Application under test:** Currency Exchange Tracker (FastAPI backend + Jinja2/vanilla JS frontend)
-**Version:** Post-verification-code & feature-integration release
+**Version:** Direct-registration & feature-integration release
 
 ---
 
@@ -24,14 +24,13 @@ thinking process, not just a fill-in-the-blanks form.
 
 This plan covers testing of all current features of the Currency Exchange Tracker
 following the recent integration of Favorites, Portfolio, Alerts, Conversion History,
-Rate Trends, and the timed in-app email verification flow (replacing the original
-OTP flow). The goal is to validate functional correctness, catch regressions introduced
+Rate Trends, and the direct registration/login flow. The goal is to validate functional correctness, catch regressions introduced
 during integration, and establish a baseline for API and basic performance behavior.
 
 ## 2. Scope
 
 ### In Scope
-- User registration and the 30-second timed email verification flow (code generation,
+- User registration and direct registration and login (code generation,
   expiry, resend limiting)
 - Login, JWT access token issuance, "Remember me" checkbox behavior
 - Currency conversion (`/convert`), live/cached rate fetching (`/rates`)
@@ -56,7 +55,7 @@ during integration, and establish a baseline for API and basic performance behav
 
 | Item | Description |
 |---|---|
-| `/register`, `/verify-code`, `/resend-code` | Timed email verification flow |
+| `/register` | Direct account registration |
 | `/login`, `/refresh-token` | Auth and token issuance |
 | `/convert`, `/rates` | Currency conversion |
 | `/favorites` (GET/POST/DELETE) | Favorite currency pairs |
@@ -66,14 +65,11 @@ during integration, and establish a baseline for API and basic performance behav
 | `/trends/{base}/{quote}` | Rate trend data |
 | `rate_history_job` (background scheduler) | Populates trend data every 15 min |
 | Dashboard UI (`dashboard.html` + `main.js`) | All dashboard interactions |
-| Login/Register UI (`login.html` + `main.js`) | Auth flows, verification modal |
+| Login/Register UI (`login.html` + `main.js`) | Direct registration and login |
 
 ## 4. Test Approach
 
-**Functional testing** — Every endpoint and UI flow gets at least one happy-path test
-and, where input validation exists, EP/BVA-based negative tests (you already have a
-template for this style from the earlier conversion test cases — reuse that pattern
-here for `/register`, `/convert`, `/portfolio`, `/alerts`).
+**Functional testing** — Every endpoint and UI flow gets at least one happy-path test and EP/BVA-based negative tests for `/register`, `/login`, `/convert`, `/portfolio`, and `/alerts`.
 
 **API testing** — Use curl, Postman, or a quick Python `requests` script to call each
 endpoint directly, independent of the UI. This is what actually proves the backend is
@@ -100,8 +96,7 @@ data by manually swapping tokens between two test accounts.
 ## 5. Entry Criteria
 - Latest code is deployed to Render and the build succeeds (check deploy logs)
 - Local dev environment starts cleanly (`python -c "import app.main"` succeeds)
-- turboSMTP environment variables are set (or the local fallback console-print path is
-  acceptable for that test session)
+- No email-delivery configuration is required because email verification is not part of the app
 - At least two test user accounts exist (for authorization cross-checks)
 
 ## 6. Exit Criteria
@@ -123,15 +118,15 @@ as you execute)
 
 | ID | Feature | Test Case | Type | Priority |
 |---|---|---|---|---|
-| TC-A01 | Registration | Register with valid data → challenge email sent, modal shows 30s countdown | Functional/UI | High |
-| TC-A02 | Verification | Enter correct code within 30s → account verified, `is_verified=True` | Functional/API | High |
-| TC-A03 | Verification | Let timer hit 0 → inputs disable, error shown, code no longer accepted | Functional/UI | High |
-| TC-A04 | Verification | Click Resend before expiry → new code sent, timer resets to 30 | Functional/API | High |
-| TC-A05 | Verification | Resend 4 times → 4th attempt returns 429, UI disables resend button | Functional/API/BVA | High |
-| TC-A06 | Verification | Submit code AFTER 30s expiry → 400 returned, old code rejected even if typed correctly | Functional/API | High |
-| TC-A07 | Login | Valid credentials, unverified account → 403 returned | Functional/API | High |
-| TC-A08 | Login | Valid credentials, verified account → access_token + refresh_token returned | Functional/API | High |
-| TC-A09 | Login | "Remember me" checked → confirm actual current behavior end-to-end (known gap — see Risks) | Functional/UI | High |
+| TC-A01 | Registration | Register with valid data → account is created without verification | Functional/API | High |
+| TC-A02 | Registration | Register with an existing email → 409 conflict | Functional/API | High |
+| TC-A03 | Registration | Password below 8 or above 128 characters → 422 | Functional/API/BVA | High |
+| TC-A04 | Login | Valid credentials → access_token and refresh_token returned | Functional/API | High |
+| TC-A05 | Login | Invalid credentials → 401 returned | Functional/API | High |
+| TC-A06 | Token security | Use an access token at /refresh-token → 401 returned | Security/API | High |
+| TC-A07 | Token security | Use a refresh token on an access-token-protected route → 401 returned | Security/API | High |
+| TC-A08 | Registration UI | Successful registration returns to login; no OTP panel appears | Functional/UI | High |
+| TC-A09 | Login UI | Successful login navigates to dashboard | Functional/UI | High |
 | TC-C01 | Conversion | Convert 1000 USD → ZAR, guest (no token) → succeeds, history NOT logged to any user | Functional/API | High |
 | TC-C02 | Conversion | Convert while logged in → succeeds, entry appears in `/history/recent` | Functional/API | High |
 | TC-C03 | Conversion | Convert with amount = 0 → check actual validation behavior (no explicit min enforced in ConvertRequest beyond gt=0) | Functional/BVA | Medium |
@@ -157,8 +152,7 @@ as you execute)
 - **Deployed:** `https://currency-exchange-tracker-app.onrender.com`, PostgreSQL on Render
 - **Browsers:** Chrome and Firefox at minimum (you already found a Firefox-specific
   bug once with GitHub's editor — cross-browser checks are worth keeping habitual)
-- **Test data:** at least 2 distinct verified user accounts, 1 unverified account
-  (for testing the verification flow itself)
+- **Test data:** at least 2 distinct user accounts for authorization cross-checks
 - **Tools:** curl/Postman (API), browser DevTools (UI/network), JMeter (performance)
 
 ## 10. Test Deliverables
@@ -172,7 +166,7 @@ as you execute)
 ## 11. Schedule (rough, self-paced)
 | Phase | Focus | Environment |
 |---|---|---|
-| 1 | Functional + API — Auth & Verification | Local |
+| 1 | Functional + API — Authentication | Local |
 | 2 | Functional + API — Conversion, Favorites, Portfolio, Alerts, History, Trends | Local |
 | 3 | UI/manual exploratory — full dashboard walkthrough | Local |
 | 4 | Regression — repeat Phases 1-3 against deployed environment | Deployed |
@@ -188,8 +182,6 @@ projects benefit from naming this, since it forces clarity on who signs off.
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| 30-second code TTL vs real email delivery latency | Users may not receive/read the code in time | Test explicitly (TC-A06); consider raising TTL if repeatedly too tight in practice |
-| `CHALLENGE_STORE` and rate-limiting are in-memory, single-process | Data lost on restart; won't work if Render ever scales to >1 instance | Acceptable for current WEB_CONCURRENCY=1 setup; flag as a known limitation, not a bug, unless scaling changes |
 | `DEFAULT_RATES` fallback dict doesn't cover all dropdown currencies | Silent incorrect conversion rate (defaults to 1.0) if the live FX API fails for an uncommon currency | Test TC-C04 explicitly; consider expanding `DEFAULT_RATES` as a follow-up fix, not covered in this test cycle |
 | "Remember me" token generated but not consumed anywhere in the frontend | Feature appears broken/incomplete to a user who expects persistent login | Documented in TC-A09 as a known gap to confirm, not silently assumed fixed |
 | Alerts are stored but never checked against live rates | Feature is visibly incomplete (a "silent" gap) | Explicitly out of scope this cycle — don't test as if it should trigger anything yet |

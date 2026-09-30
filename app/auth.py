@@ -6,9 +6,14 @@ from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
 import jwt
+from dotenv import load_dotenv
 from passlib.context import CryptContext
 
-JWT_SECRET = os.getenv("JWT_SECRET", "change-me")
+# Load local development settings without overriding environment variables.
+load_dotenv()
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    raise RuntimeError("JWT_SECRET must be set in the environment or local .env file")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 30

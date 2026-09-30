@@ -6,6 +6,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
+# Use a dedicated non-production signing key for automated tests.
+os.environ.setdefault("JWT_SECRET", "test-only-secret-do-not-use-in-production")
+
 import pytest
 from fastapi.testclient import TestClient
 from selenium import webdriver
@@ -15,8 +19,6 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.main import app
-
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
 
 engine = create_engine("sqlite:///./test_currency.db", connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -68,47 +70,15 @@ def browser():
     driver.quit()
 
 @pytest.fixture
-def captured_emails(monkeypatch):
-    """
-    Intercepts send_challenge_email so tests can grab the real code
-    without needing an actual inbox. This is the standard pattern for
-    testing anything delivered out-of-band (email, SMS) — mock the
-    delivery function and capture what it was called with.
-    """
-    sent = []
- 
-    def fake_send_challenge_email(email, code):
-        sent.append({"email": email, "code": code})
- 
-    monkeypatch.setattr("app.main.send_challenge_email", fake_send_challenge_email)
-    return sent
-
-@pytest.fixture
 def authenticated_session(browser, base_url):
-    """
-    Local-only fixture: registers a user via the real API, then verifies
-    them by writing directly to the LIVE server's database (bypassing the
-    actual email flow — that's already covered by its own dedicated tests).
-    Logs in via the real API and injects the access_token into the
-    browser's localStorage.
- 
-    Deliberately does NOT use app.database.SessionLocal, since conftest.py
-    monkeypatches that to a different database (test_currency.db) for the
-    in-process TestClient tests — this fixture needs to reach whichever
-    database the SEPARATELY RUNNING server process actually uses, read
-    fresh from DATABASE_URL, not the patched module reference.
-    """
-    import os
+    """Register and log in through the running app, then seed browser auth state."""
     import uuid
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import sessionmaker
-    from app.models import User
- 
+
     email = f"dashboard-{uuid.uuid4().hex[:10]}@example.com"
     password = "StrongPass1!"
- 
-    with httpx.Client(base_url=base_url) as client:
-        client.post(
+
+    with httpx.Client(base_url=base_url) as api_client:
+        register_response = api_client.post(
             "/register",
             json={
                 "email": email,
@@ -118,30 +88,14 @@ def authenticated_session(browser, base_url):
                 "country": "South Africa",
             },
         )
- 
-    live_db_url = os.getenv("DATABASE_URL", "sqlite:///./ci_currency.db")
-    connect_args = {"check_same_thread": False} if live_db_url.startswith("sqlite") else {}
-    live_engine = create_engine(live_db_url, connect_args=connect_args)
-    LiveSession = sessionmaker(bind=live_engine)
- 
-    db = LiveSession()
-    try:
-        user = db.query(User).filter(User.email == email).first()
-        assert user is not None, (
-            f"User {email} not found in {live_db_url} — the live server's "
-            f"DATABASE_URL may not match this fixture's assumption."
-        )
-        user.is_verified = True
-        db.commit()
-    finally:
-        db.close()
- 
-    with httpx.Client(base_url=base_url) as client:
-        login_response = client.post("/login", json={"email": email, "password": password})
+        assert register_response.status_code == 200, register_response.text
+
+        login_response = api_client.post("/login", json={"email": email, "password": password})
+        assert login_response.status_code == 200, login_response.text
         token = login_response.json()["access_token"]
- 
+
     browser.get(f"{base_url}/dashboard")
-    browser.execute_script(f"window.localStorage.setItem('access_token', '{token}');")
+    browser.execute_script("window.localStorage.setItem('access_token', arguments[0]);", token)
     browser.refresh()
- 
+
     return browser
