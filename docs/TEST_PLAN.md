@@ -4,7 +4,7 @@
 **Test Plan ID:** CET-TP-01
 **Prepared by:** Thabo Addy Mahlangu
 **Application under test:** Currency Exchange Tracker (FastAPI backend + Jinja2/vanilla JS frontend)
-**Version:** Post-verification-code & feature-integration release
+**Version:** Direct-registration & feature-integration release
 
 ---
 
@@ -24,14 +24,13 @@ thinking process, not just a fill-in-the-blanks form.
 
 This plan covers testing of all current features of the Currency Exchange Tracker
 following the recent integration of Favorites, Portfolio, Alerts, Conversion History,
-Rate Trends, and the timed in-app email verification flow (replacing the original
-OTP flow). The goal is to validate functional correctness, catch regressions introduced
+Rate Trends, and the direct registration/login flow. The goal is to validate functional correctness, catch regressions introduced
 during integration, and establish a baseline for API and basic performance behavior.
 
 ## 2. Scope
 
 ### In Scope
-- User registration and the 30-second timed email verification flow (code generation,
+- User registration and direct registration and login (code generation,
   expiry, resend limiting)
 - Login, JWT access token issuance, "Remember me" checkbox behavior
 - Currency conversion (`/convert`), live/cached rate fetching (`/rates`)
@@ -56,7 +55,7 @@ during integration, and establish a baseline for API and basic performance behav
 
 | Item | Description |
 |---|---|
-| `/register`, `/verify-code`, `/resend-code` | Timed email verification flow |
+| `/register` | Direct account registration |
 | `/login`, `/refresh-token` | Auth and token issuance |
 | `/convert`, `/rates` | Currency conversion |
 | `/favorites` (GET/POST/DELETE) | Favorite currency pairs |
@@ -153,8 +152,7 @@ as you execute)
 - **Deployed:** `https://currency-exchange-tracker-app.onrender.com`, PostgreSQL on Render
 - **Browsers:** Chrome and Firefox at minimum (you already found a Firefox-specific
   bug once with GitHub's editor — cross-browser checks are worth keeping habitual)
-- **Test data:** at least 2 distinct verified user accounts, 1 unverified account
-  (for testing the verification flow itself)
+- **Test data:** at least 2 distinct user accounts for authorization cross-checks
 - **Tools:** curl/Postman (API), browser DevTools (UI/network), JMeter (performance)
 
 ## 10. Test Deliverables
