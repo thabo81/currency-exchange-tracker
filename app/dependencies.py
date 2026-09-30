@@ -19,6 +19,10 @@ def get_current_user(
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid or expired token") from exc
 
+    # Refresh tokens are not valid credentials for protected API routes.
+    if payload.get("type") != "access":
+        raise HTTPException(status_code=401, detail="Invalid access token type")
+
     user_id = payload.get("sub")
     if not user_id:
         raise HTTPException(status_code=401, detail="Invalid token payload")
