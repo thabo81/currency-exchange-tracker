@@ -18,61 +18,6 @@ function showPanel(panelId) {
   });
 }
 
-function fillOTPInputs() {
-  const otpInputs = [...document.querySelectorAll(".otp-digit")];
-  otpInputs.forEach((input, index) => {
-    input.addEventListener("input", (event) => {
-      // allow letters + digits now (was digits-only before)
-      const value = event.target.value.replace(/[^a-zA-Z0-9]/g, "").slice(0, 1).toUpperCase();
-      event.target.value = value;
-      if (value && index < otpInputs.length - 1) {
-        otpInputs[index + 1].focus();
-      }
-    });
- 
-    input.addEventListener("keydown", (event) => {
-      if (event.key === "Backspace" && !input.value && index > 0) {
-        otpInputs[index - 1].focus();
-      }
-    });
-  });
-}
- 
-let countdownInterval = null;
- 
-function startCountdown(seconds = 90) {
-  clearInterval(countdownInterval);
-  let remaining = seconds;
- 
-  const timerEl = document.getElementById("otp-timer");
-  const otpInputs = [...document.querySelectorAll(".otp-digit")];
-  const resendBtn = document.getElementById("resend-code-btn");
-  const errorEl = document.getElementById("otp-error");
- 
-  errorEl.style.display = "none";
-  otpInputs.forEach((input) => {
-    input.disabled = false;
-    input.value = "";
-  });
-  otpInputs[0]?.focus();
-  resendBtn.disabled = false;
-  resendBtn.textContent = "Resend code";
- 
-  timerEl.textContent = remaining;
- 
-  countdownInterval = setInterval(() => {
-    remaining -= 1;
-    timerEl.textContent = remaining;
- 
-    if (remaining <= 0) {
-      clearInterval(countdownInterval);
-      otpInputs.forEach((input) => (input.disabled = true));
-      errorEl.textContent = "Code expired — click Resend code to get a new one.";
-      errorEl.style.display = "block";
-    }
-  }, 1000);
-}
-
 async function requestJson(url, options = {}) {
   const response = await fetch(url, {
       ...options,
@@ -104,111 +49,76 @@ async function requestJson(url, options = {}) {
   return data;
 }
 
-function initAuthFlow() {
-  const loginPanel = document.getElementById("login-panel");
-  if (!loginPanel) return;
-
-  document.getElementById("show-register").addEventListener("click", () => showPanel("register-panel"));
-  document.getElementById("back-to-login").addEventListener("click", () => {
-    clearInterval(countdownInterval);
-    showPanel("login-panel");
-  });
-  fillOTPInputs();
-
-  document.getElementById("login-form").addEventListener("submit", async (event) => {
-    // ... (keep your existing login logic here) ...
-  });
-
-  document.getElementById("register-form").addEventListener("submit", async (event) => {
-    // ... (keep your existing register logic here) ...
-  });
-
-  // 👇 MOVED INSIDE initAuthFlow() 👇
-  document.getElementById("otp-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const code = [...document.querySelectorAll(".otp-digit")].map((input) => input.value).join("");
-    const email = document.getElementById("register-email").value;
-    const errorEl = document.getElementById("otp-error");
-
-    try {
-      await requestJson(`${API_BASE}/verify-code`, {
-        method: "POST",
-        body: JSON.stringify({ email, code }),
-      });
-      clearInterval(countdownInterval);
-      alert("Email verified successfully. You can now log in.");
-      showPanel("login-panel");
-    } catch (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = "block";
-    }
-  });
-
-  document.getElementById("resend-code-btn").addEventListener("click", async () => {
-    const email = document.getElementById("register-email").value;
-    const resendBtn = document.getElementById("resend-code-btn");
-    const errorEl = document.getElementById("otp-error");
-
-    try {
-      const result = await requestJson(`${API_BASE}/resend-code`, {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-      document.getElementById("displayed-code").textContent = result.code;
-      startCountdown(90);
-    } catch (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = "block";
-      if (error.message.toLowerCase().includes("maximum resend")) {
-        resendBtn.disabled = true;
-        resendBtn.textContent = "No resends left";
-      }
-    }
-  });
-  // 👆 MOVED INSIDE initAuthFlow() 👆
+function showAuthMessage(message, isError = false) {
+  const messageEl = document.getElementById("auth-message");
+  if (!messageEl) return;
+  messageEl.textContent = message;
+  messageEl.classList.toggle("error", isError);
+  messageEl.style.display = message ? "block" : "none";
 }
 
-  document.getElementById("otp-form").addEventListener("submit", async (event) => {
+function initAuthFlow() {
+  const loginForm = document.getElementById("login-form");
+  const registerForm = document.getElementById("register-form");
+  if (!loginForm || !registerForm) return;
+
+  document.getElementById("show-register")?.addEventListener("click", () => {
+    showAuthMessage("");
+    showPanel("register-panel");
+  });
+
+  loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const code = [...document.querySelectorAll(".otp-digit")].map((input) => input.value).join("");
-    const email = document.getElementById("register-email").value;
-    const errorEl = document.getElementById("otp-error");
- 
+    showAuthMessage("");
+
+    // Read the form fields and submit the credentials to the login endpoint.
+    const email = document.getElementById("login-email").value.trim();
+    const password = document.getElementById("login-password").value;
+    const rememberMe = document.getElementById("remember-me")?.checked ?? false;
+
     try {
-      await requestJson(`${API_BASE}/verify-code`, {
+      const result = await requestJson(`${API_BASE}/login`, {
         method: "POST",
-        body: JSON.stringify({ email, code }),
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
       });
-      clearInterval(countdownInterval);
-      alert("Email verified successfully. You can now log in.");
+
+      // Store the access token so authenticated dashboard requests can use it.
+      saveToken(result.access_token);
+      window.location.href = "/dashboard";
+    } catch (error) {
+      showAuthMessage(error.message, true);
+    }
+  });
+
+  registerForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    showAuthMessage("");
+
+    // Gather registration details; the backend hashes the password before saving.
+    const payload = {
+      first_name: document.getElementById("register-first-name").value.trim(),
+      surname: document.getElementById("register-surname").value.trim(),
+      email: document.getElementById("register-email").value.trim(),
+      country: document.getElementById("register-country").value.trim(),
+      password: document.getElementById("register-password").value,
+    };
+
+    try {
+      const result = await requestJson(`${API_BASE}/register`, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      // Registration completes immediately; no OTP or email verification is used.
+      document.getElementById("login-email").value = payload.email;
+      registerForm.reset();
       showPanel("login-panel");
+      showAuthMessage(result.message || "Registration successful. You can now log in.");
     } catch (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = "block";
+      showAuthMessage(error.message, true);
     }
   });
- 
-    document.getElementById("resend-code-btn").addEventListener("click", async () => {
-    const email = document.getElementById("register-email").value;
-    const resendBtn = document.getElementById("resend-code-btn");
-    const errorEl = document.getElementById("otp-error");
- 
-    try {
-      const result = await requestJson(`${API_BASE}/resend-code`, {
-        method: "POST",
-        body: JSON.stringify({ email }),
-      });
-      document.getElementById("displayed-code").textContent = result.code;
-      startCountdown(90);
-    } catch (error) {
-      errorEl.textContent = error.message;
-      errorEl.style.display = "block";
-      if (error.message.toLowerCase().includes("maximum resend")) {
-        resendBtn.disabled = true;
-        resendBtn.textContent = "No resends left";
-      }
-    }
-  });
+}
 
 function initDashboard() {
   const amountInput = document.getElementById("amount-input");
