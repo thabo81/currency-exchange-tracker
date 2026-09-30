@@ -30,7 +30,7 @@ A full-stack currency conversion web application built with **Python, FastAPI, S
 
 ### User accounts and sessions
 
-- User registration and verification-code flow.
+- Direct user registration without email verification.
 - Login with password hashing and JWT-based access tokens.
 - Refresh-token/session handling.
 - Input validation and authentication error handling.
@@ -73,7 +73,6 @@ currency-exchange-tracker/
 │   ├── models.py               # Database models
 │   ├── schemas.py              # Request/response validation schemas
 │   ├── services.py             # Exchange-rate retrieval and conversion logic
-│   ├── verification.py         # Verification-code logic
 │   ├── rate_history_job.py     # Rate-history background job
 │   ├── routers/                # Feature routes
 │   ├── templates/              # Jinja2 HTML templates
@@ -84,8 +83,8 @@ currency-exchange-tracker/
 │   └── dashboard_page.py       # Dashboard page object
 ├── tests/
 │   ├── conftest.py             # Pytest fixtures and test setup
-│   ├── test_auth.py            # Authentication and verification tests
-│   ├── test_registration_ui.py # Registration UI tests
+│   ├── test_auth.py            # Authentication and request-validation tests
+│   ├── test_registration_ui.py # Direct-registration UI tests
 │   ├── test_ui.py              # UI tests
 │   └── test_dashboard_features_ui.py
 ├── docs/
@@ -201,7 +200,7 @@ The project uses a mix of test techniques and automation patterns:
 - **API/backend testing:** Exercise endpoints using FastAPI's `TestClient` and HTTPX.
 - **UI automation:** Use Selenium WebDriver to interact with pages in a browser.
 - **Page Object Model (POM):** Keep page locators and common browser interactions in reusable page classes.
-- **Negative and boundary testing:** Check invalid inputs and authentication/verification edge cases.
+- **Negative and boundary testing:** Check invalid inputs and authentication and token-security edge cases.
 - **Regression testing:** Re-run automated checks after changes to help identify unintended behaviour.
 - **Test fixtures:** Use Pytest fixtures to configure clients, browsers, and test data.
 - **Defect documentation:** Record reproduction steps, expected/actual results, severity, priority, and investigation notes.
