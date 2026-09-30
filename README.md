@@ -1,127 +1,241 @@
 # Currency Exchange Tracker
 
-A robust, full-stack currency exchange application designed for real-time rate lookups, offline resilience, and secure user management. This project demonstrates modern UI principles alongside a highly resilient backend featuring JWT authentication, automated rate caching, and comprehensive error handling.
+A full-stack currency conversion web application built with **Python, FastAPI, SQLAlchemy, Jinja2, and vanilla JavaScript**. It supports currency conversion using live exchange-rate data when available, a cached-rate fallback, and account-based features such as favourites, portfolio holdings, conversion history, rate trends, and target-rate alerts.
 
-## 🚀 Core Features
+[![Automated Tests](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml)
 
-### 🔐 Authentication & Security
+> **Project focus:** Application development and QA automation practice. The repository includes Pytest API/backend tests, Selenium browser UI tests, test documentation, and a GitHub Actions workflow. Check the Actions tab for the latest CI result.
 
-* **User Onboarding:** Collects Email, First & Last Name, Password, and Country of Residence.
-* **Email Verification:** Dispatches a 6-digit OTP to the user's email to verify account ownership before first login.
-* **Modern Login UI:** Aesthetically pleasing interface with password visibility toggles and clear error state highlights.
-* **Secure Sessions:** Utilizes bcrypt for password hashing and short-lived JWTs (15-minute expiry) for active sessions.
-* **"Remember Me" Auto-Login:** Implements persistent device login using cryptographically secure refresh tokens stored on the device, complete with automatic token rotation upon each use.
+## Contents
 
-### 💱 Exchange & Dashboard Engine
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Running the Tests](#running-the-tests)
+- [Testing Approach](#testing-approach)
+- [CI Workflow](#ci-workflow)
+- [Known Limitations](#known-limitations)
+- [Documentation](#documentation)
 
-* **Instant Converter:** Auto-focused numeric input (capped at 12 digits) with a central one-tap swap toggle.
-* **Curated Selection:** Prioritizes top currencies (USD, ZAR, EUR, JPY, GBP, CHF) in the dropdowns for speed, while supporting mathematical conversions for 140+ global currencies via the backend.
-* **Live Conversion Output:** Large, real-time output display applying currency-specific rounding rules (e.g., 2 decimal places for standard currencies).
-* **Trust & Metadata:** Displays the explicit 1-unit base rate, a "Last Updated" timestamp, and a visual network badge indicating if rates are live or served from the offline cache. Includes a manual pull-to-refresh action.
-* **Shortcuts & History:** Features tappable quick-select favorite chips, a sparkline trend graph (7/30 days), and a log of the last 3-5 conversions.
+## Features
 
-### ⚙️ Advanced Utilities
+### Currency conversion and exchange rates
 
-* **Multi-Currency Matrix:** Convert a single base amount across 5+ target currencies simultaneously.
-* **Custom Rate Alerts:** Background worker system monitoring market fluctuations to trigger push notifications (e.g., "Alert me when 1 USD drops below 18.00 ZAR").
+- Convert between supported currencies.
+- Retrieve current exchange-rate data from an external rate provider.
+- Fall back to cached rates or built-in default rates when live rate retrieval is unavailable.
+- Display rate information and update timestamps in the interface.
+- View historical rate trends where rate-history data is available.
 
----
+### User accounts and sessions
 
-## 🛠️ Tech Stack & Architecture
+- User registration and verification-code flow.
+- Login with password hashing and JWT-based access tokens.
+- Refresh-token/session handling.
+- Input validation and authentication error handling.
 
-* **Backend / REST API:** Python (FastAPI / Flask)
-* **Database:** PostgreSQL with SQLAlchemy ORM
-* **Security:** bcrypt, JSON Web Tokens (JWT)
-* **Frontend:** Modern UI framework (React / Flutter)
-* **Testing & QA:** PyTest (Backend/API), Selenium WebDriver (End-to-End UI Automation)
+### Personal dashboard features
 
----
+- Save and manage favourite currency pairs.
+- Track currency holdings in a portfolio.
+- Review recent conversion history.
+- Create target-rate alerts.
+- Use dashboard controls for common currency conversion actions.
 
-## 🗄️ Database Schema
+> Rate alerts can be created and stored. Automated alert evaluation and notification delivery are not currently described as implemented features.
 
-### `users` Table
+## Technology Stack
 
-Handles profile data and primary credentials with $O(1)$ lookup via indexed email.
+| Area | Technologies |
+|---|---|
+| Language | Python |
+| Backend and HTTP API | FastAPI, Uvicorn |
+| Database access | SQLAlchemy |
+| Database options | SQLite for local/CI use; PostgreSQL can be configured |
+| Frontend | Jinja2 templates, HTML, CSS, vanilla JavaScript |
+| Browser automation | Selenium WebDriver |
+| Test framework | Pytest |
+| API test utilities | FastAPI TestClient, HTTPX |
+| Authentication | JWT, password hashing |
+| Scheduling | APScheduler |
+| CI | GitHub Actions |
 
-* `user_id`: UUID (Primary Key)
-* `email`: VARCHAR (Unique, Indexed)
-* `password_hash`: VARCHAR (Bcrypt hashed)
-* `first_name` & `surname`: VARCHAR
-* `country`: VARCHAR
-* `is_verified`: BOOLEAN (Default: False)
+## Project Structure
 
-### `user_sessions` Table
+```text
+currency-exchange-tracker/
+├── app/
+│   ├── main.py                 # FastAPI application and core routes
+│   ├── auth.py                 # Authentication utilities
+│   ├── database.py             # SQLAlchemy engine and database session
+│   ├── dependencies.py         # Shared request dependencies
+│   ├── models.py               # Database models
+│   ├── schemas.py              # Request/response validation schemas
+│   ├── services.py             # Exchange-rate retrieval and conversion logic
+│   ├── verification.py         # Verification-code logic
+│   ├── rate_history_job.py     # Rate-history background job
+│   ├── routers/                # Feature routes
+│   ├── templates/              # Jinja2 HTML templates
+│   └── static/                 # CSS and JavaScript
+├── pages/
+│   ├── base_page.py            # Shared Selenium page behaviour
+│   ├── login_page.py           # Login/registration page object
+│   └── dashboard_page.py       # Dashboard page object
+├── tests/
+│   ├── conftest.py             # Pytest fixtures and test setup
+│   ├── test_auth.py            # Authentication and verification tests
+│   ├── test_registration_ui.py # Registration UI tests
+│   ├── test_ui.py              # UI tests
+│   └── test_dashboard_features_ui.py
+├── docs/
+│   ├── TEST_PLAN.md            # Test scope, approach, and planned coverage
+│   └── DEFECT_LOG.md           # Structured defect documentation
+├── .github/workflows/
+│   └── tests.yml               # GitHub Actions test workflow
+├── requirements.txt
+└── README.md
+```
 
-Manages secure device state and token rotation. Uses ON DELETE CASCADE to clear tokens if a user account is removed.
+## Getting Started
 
-* `session_id`: UUID (Primary Key)
-* `user_id`: UUID (Foreign Key)
-* `token_hash`: VARCHAR (Indexed)
-* `expires_at`: TIMESTAMP (e.g., 30 days)
+### Prerequisites
 
----
+- Python 3.12 or a compatible Python version.
+- Google Chrome for Selenium browser tests.
+- Git.
 
-## 🛡️ Error Handling & System Resilience
-
-* **Authentication Safety:** Returns a unified "Invalid email or password" (401 Unauthorized) to prevent user enumeration. Duplicate registrations cleanly return a 409 Conflict.
-* **Session Management:** Expired refresh tokens are actively purged from the database and the user is securely redirected to the login screen.
-* **Database Integrity:** All SQL operations are wrapped in TRY...EXCEPT blocks containing explicit db.rollback() executions on failure, returning a clean 500 Internal Server Error without exposing stack traces.
-* **Input Validation:** Front-end logic strictly enforces numeric entry, prevents integer overflow, and catches negative inputs before API triggers.
-
----
-
-## 💻 Local Setup & Installation
-
-**1. Clone the Repository**
+### 1. Clone the repository
 
 ```bash
 git clone https://github.com/thabo81/currency-exchange-tracker.git
 cd currency-exchange-tracker
-
 ```
 
-**2. Configure Environment Variables**
-Create a `.env` file in the root directory:
+### 2. Create and activate a virtual environment
+
+**Windows (PowerShell):**
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+**macOS/Linux:**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
+python -m pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+### 4. Configure environment variables
+
+The application defaults to a local SQLite database, so a database URL is not required for a basic local run. Create a `.env` file in the project root if you need to override settings:
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/currency_db
-JWT_SECRET=your_super_secret_key
-RATE_API_KEY=your_exchange_rate_provider_key
-
+DATABASE_URL=sqlite:///./currency_exchange.db
+JWT_SECRET=replace_with_a_local_development_secret
+# Optional: configure a rate provider key if required by your provider
+RATE_API_KEY=
 ```
 
-**3. Initialize the Backend Environment**
+Use a strong secret in any deployed environment. Do not commit real credentials or API keys to Git.
+
+For PostgreSQL, set `DATABASE_URL` to your PostgreSQL connection string and ensure the database is available. Review the application's current database setup before applying migrations; do not assume a migration command is required for every local setup.
+
+### 5. Start the application
+
+From the repository root, run:
 
 ```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-
-pip install -r requirements.txt
-
-# Execute database migrations
-alembic upgrade head
-
+uvicorn app.main:app --reload
 ```
 
-**4. Start the Application**
+Open [http://localhost:8000](http://localhost:8000) in your browser.
+
+## Running the Tests
+
+Run the complete test suite from the repository root:
 
 ```bash
-# Start the Python REST API server
-uvicorn main:app --reload
-
+pytest -v
 ```
 
----
-
-## 🧪 Testing
-
-This project emphasizes test-driven reliability. The suite covers database transactions, authentication flows, REST API rate mocked failures, and Selenium Page Object Model (POM) UI automation.
+Run individual test modules when debugging:
 
 ```bash
-# Run backend unit and API integration tests
-pytest tests/api/ -v
-
-# Execute Selenium End-to-End UI automation
-pytest tests/ui/ -v
-
+pytest tests/test_auth.py -v
+pytest tests/test_registration_ui.py -v
+pytest tests/test_ui.py -v
+pytest tests/test_dashboard_features_ui.py -v
 ```
+
+The suite includes API/backend tests and Selenium browser tests. Browser tests require Chrome and a compatible ChromeDriver/browser setup. Some dashboard UI tests use a separately running application through `BASE_URL` or `--base-url`.
+
+To point those tests at a running local application, start the server in one terminal:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+Then run the relevant test module in another terminal, for example:
+
+```bash
+pytest tests/test_dashboard_features_ui.py -v --base-url http://localhost:8000
+```
+
+Test setup and environment requirements are defined in `tests/conftest.py`. If tests fail, read the first failure and its traceback before changing the application or test setup.
+
+## Testing Approach
+
+The project uses a mix of test techniques and automation patterns:
+
+- **Functional testing:** Validate user-visible behaviour and application responses.
+- **API/backend testing:** Exercise endpoints using FastAPI's `TestClient` and HTTPX.
+- **UI automation:** Use Selenium WebDriver to interact with pages in a browser.
+- **Page Object Model (POM):** Keep page locators and common browser interactions in reusable page classes.
+- **Negative and boundary testing:** Check invalid inputs and authentication/verification edge cases.
+- **Regression testing:** Re-run automated checks after changes to help identify unintended behaviour.
+- **Test fixtures:** Use Pytest fixtures to configure clients, browsers, and test data.
+- **Defect documentation:** Record reproduction steps, expected/actual results, severity, priority, and investigation notes.
+
+The test plan contains additional scope and test ideas. Items described as planned in that document should not be interpreted as completed testing unless test evidence has been recorded.
+
+## CI Workflow
+
+The GitHub Actions workflow in `.github/workflows/tests.yml` is configured to run when code is pushed to `main` or a pull request targets `main`. It:
+
+1. Checks out the repository.
+2. Sets up Python.
+3. Installs Chrome and project dependencies.
+4. Starts the FastAPI application.
+5. Runs `pytest -v`.
+6. Prints application logs if the job fails.
+
+View the [workflow runs](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml) for the current status and failure details. The workflow being configured does not, by itself, mean every run is passing.
+
+## Known Limitations
+
+- Live exchange-rate retrieval depends on the external provider and network availability; cached/default rates are used as fallbacks.
+- Rate alerts are stored, but automated rate evaluation and notification delivery are not currently implemented.
+- The test plan includes proposed performance/load testing. Do not treat that work as completed unless results and test evidence are added.
+- CI results can vary as the application and tests change. Use the Actions tab to check the latest run.
+
+## Documentation
+
+- [Test Plan](docs/TEST_PLAN.md)
+- [Defect Log](docs/DEFECT_LOG.md)
+- [GitHub Actions](https://github.com/thabo81/currency-exchange-tracker/actions)
+
+## Author
+
+**Thabo Addy Mahlangu**
+
+- GitHub: [@thabo81](https://github.com/thabo81)
