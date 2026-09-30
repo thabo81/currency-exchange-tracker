@@ -11,6 +11,14 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
+from app.auth import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_password,
+    hash_token,
+    verify_password,
+)
 
 from app.database import Base, engine, get_db
 from app.models import ConversionHistory, RateCache, User, UserSession
