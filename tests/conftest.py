@@ -6,6 +6,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
+# Use a dedicated non-production signing key for automated tests.
+os.environ.setdefault("JWT_SECRET", "test-only-secret-do-not-use-in-production")
+
 import pytest
 from fastapi.testclient import TestClient
 from selenium import webdriver
@@ -15,10 +19,6 @@ from sqlalchemy.orm import sessionmaker
 
 from app.database import Base
 from app.main import app
-
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_currency.db")
-# Use a dedicated non-production signing key for automated tests.
-os.environ.setdefault("JWT_SECRET", "test-only-secret-do-not-use-in-production")
 
 engine = create_engine("sqlite:///./test_currency.db", connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
