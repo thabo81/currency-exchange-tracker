@@ -24,12 +24,9 @@ from app.database import Base, engine, get_db
 from app.models import ConversionHistory, RateCache, User, UserSession
 from app.schemas import (
     ConvertRequest,
-    ResendChallengeRequest,
     UserLoginRequest,
     UserRegisterRequest,
-    VerifyChallengeRequest,
 )
-from app.verification import create_challenge, resend_challenge, verify_challenge
 from app.services import convert_currency, get_rate_snapshot
 
 from app.dependencies import get_optional_user
@@ -77,62 +74,29 @@ async def dashboard_page(request: Request):
 
 @app.post("/register")
 def register_user(payload: UserRegisterRequest, db: Session = Depends(get_db)):
-        normalized_email = payload.email.lower().strip()
-        existing = db.query(User).filter(User.email == normalized_email).first()
-        if existing:
-            raise HTTPException(status_code=409, detail="User already exists")
- 
-        user = User(
-            email=normalized_email,
-            password_hash=hash_password(payload.password),
-            first_name=payload.first_name,
-            surname=payload.surname,
-            country=payload.country,
-            is_verified=False,
-        )
-        db.add(user)
-        db.commit()
-        db.refresh(user)
- 
-        code = create_challenge(normalized_email)
- 
-        return {
-            "message": "Registration successful. Enter the verification code shown below within 90 seconds.",
-            "email": normalized_email,
-            "code": code,
-        }
-    
-
-
-@app.post("/verify-code")
-def verify_code(payload: VerifyChallengeRequest, db: Session = Depends(get_db)):
+    """Create an account directly; email verification is not part of this app."""
     normalized_email = payload.email.lower().strip()
-    user = db.query(User).filter(User.email == normalized_email).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
+    existing = db.query(User).filter(User.email == normalized_email).first()
+    if existing:
+        raise HTTPException(status_code=409, detail="User already exists")
 
-    if not verify_challenge(normalized_email, payload.code):
-        raise HTTPException(status_code=400, detail="Invalid or expired code")
-
-    user.is_verified = True
+    user = User(
+        email=normalized_email,
+        password_hash=hash_password(payload.password),
+        first_name=payload.first_name,
+        surname=payload.surname,
+        country=payload.country,
+        # Retain compatibility with existing database rows and the legacy column.
+        is_verified=True,
+    )
+    db.add(user)
     db.commit()
-    return {"message": "Account verified successfully", "email": normalized_email}
+    db.refresh(user)
 
-
-@app.post("/resend-code")
-def resend_code(payload: ResendChallengeRequest, db: Session = Depends(get_db)):
-        normalized_email = payload.email.lower().strip()
-        user = db.query(User).filter(User.email == normalized_email).first()
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-        if user.is_verified:
-            raise HTTPException(status_code=400, detail="Account already verified")
- 
-        code = resend_challenge(normalized_email)
-        if code is None:
-            raise HTTPException(status_code=429, detail="Maximum resend attempts reached")
- 
-        return {"message": "Code resent", "code": code}
+    return {
+        "message": "Registration successful. You can now log in.",
+        "email": normalized_email,
+    }
 
 
 @app.post("/login")
@@ -141,9 +105,6 @@ def login(payload: UserLoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == normalized_email).first()
     if not user or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    if not user.is_verified:
-        raise HTTPException(status_code=403, detail="User not verified")
 
     access_token = create_access_token(str(user.user_id))
     refresh_token = create_refresh_token(str(user.user_id))
@@ -211,6 +172,10 @@ def refresh_token(token: str):
         payload = decode_token(token)
     except Exception as exc:
         raise HTTPException(status_code=401, detail="Invalid token") from exc
+
+    # A refresh endpoint must not accept an access token.
+    if payload.get("type") != "refresh":
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
 
     user_id = payload.get("sub")
     if not user_id:
