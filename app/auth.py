@@ -20,7 +20,13 @@ REFRESH_TOKEN_EXPIRE_DAYS = 30
 
  
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Prefer bcrypt_sha256 for new passwords so passwords longer than
+# bcrypt's 72-byte input limit can be hashed safely.
+# Keep bcrypt available to verify passwords stored using the old scheme.
+pwd_context = CryptContext(
+    schemes=["bcrypt_sha256", "bcrypt"],
+    deprecated="auto",
+)
 
 
 def hash_password(password: str) -> str:
