@@ -45,8 +45,6 @@ def _fetch_rates_with_source(base_currency: str = "USD") -> tuple[dict[str, floa
         with urlopen(request, timeout=8) as response:
             payload = json.loads(response.read().decode("utf-8"))
             rates = parse_rate_payload(payload)
-            if base_currency not in rates:
-                rates[base_currency] = 1.0
             save_rate_cache(base_currency, rates)
             return rates, "live"
     except (URLError, ValueError, TimeoutError):
