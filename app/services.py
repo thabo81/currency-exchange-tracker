@@ -25,10 +25,24 @@ DEFAULT_RATES = {
 
 
 def parse_rate_payload(payload: dict[str, Any]) -> dict[str, float]:
-    """Extract rates from a provider response, or use defaults for an unrecognised shape."""
-    if "rates" in payload and isinstance(payload["rates"], dict):
-        return {key.upper(): float(value) for key, value in payload["rates"].items()}
-    return DEFAULT_RATES.copy()
+    """Extract valid rates from a provider response.
+
+    Raise ValueError for an unexpected or empty response instead of silently
+    returning default rates, which could incorrectly be labelled as live data.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("rates"), dict):
+        raise ValueError("Unexpected exchange-rate provider response: missing rates object")
+
+    raw_rates = payload["rates"]
+    if not raw_rates:
+        raise ValueError("Unexpected exchange-rate provider response: rates object is empty")
+
+    try:
+        rates = {str(key).upper(): float(value) for key, value in raw_rates.items()}
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("Unexpected exchange-rate provider response: invalid rate value") from exc
+
+    return rates
 
 
 def _fetch_rates_with_source(base_currency: str = "USD") -> tuple[dict[str, float], str]:
@@ -47,7 +61,7 @@ def _fetch_rates_with_source(base_currency: str = "USD") -> tuple[dict[str, floa
             rates = parse_rate_payload(payload)
             save_rate_cache(base_currency, rates)
             return rates, "live"
-    except (URLError, ValueError, TimeoutError):
+    except (URLError, ValueError, TypeError, TimeoutError):
         return fetch_cached_rates(base_currency), "cached"
 
 
