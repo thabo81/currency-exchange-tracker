@@ -76,3 +76,14 @@ def test_convert_currency_rejects_non_positive_rates(monkeypatch):
 
     with pytest.raises(ValueError, match="Exchange rates must be positive"):
         services.convert_currency(10, "USD", "ZAR")
+
+def test_convert_currency_rejects_missing_source_currency(monkeypatch):
+    """An unavailable source currency must not be assigned an invented base rate."""
+    monkeypatch.setattr(
+        services,
+        "_fetch_rates_with_source",
+        lambda base: ({"USD": 1.0, "ZAR": 18.5}, "cached"),
+    )
+
+    with pytest.raises(ValueError, match="Unsupported source currency: XYZ"):
+        services.convert_currency(10, "XYZ", "ZAR")
