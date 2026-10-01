@@ -144,7 +144,13 @@ def convert(
     db: Session = Depends(get_db),
     user: User | None = Depends(get_optional_user),
 ):
-    converted_amount, rate, source = convert_currency(float(payload.amount), payload.from_currency, payload.to_currency)
+    # Convert unsupported currency/rate errors into a clear client validation response.
+    try:
+        converted_amount, rate, source = convert_currency(
+            float(payload.amount), payload.from_currency, payload.to_currency
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     history_entry = ConversionHistory(
         user_id=user.user_id if user else None,

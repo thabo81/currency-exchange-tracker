@@ -7,7 +7,6 @@ from urllib.request import Request, urlopen
 
 from sqlalchemy.orm import Session
 
-from app.auth import hash_token
 from app.database import SessionLocal
 from app.models import RateCache
 
@@ -26,12 +25,28 @@ DEFAULT_RATES = {
 
 
 def parse_rate_payload(payload: dict[str, Any]) -> dict[str, float]:
-    if "rates" in payload and isinstance(payload["rates"], dict):
-        return {key.upper(): float(value) for key, value in payload["rates"].items()}
-    return DEFAULT_RATES.copy()
+    """Extract valid rates from a provider response.
+
+    Raise ValueError for an unexpected or empty response instead of silently
+    returning default rates, which could incorrectly be labelled as live data.
+    """
+    if not isinstance(payload, dict) or not isinstance(payload.get("rates"), dict):
+        raise ValueError("Unexpected exchange-rate provider response: missing rates object")
+
+    raw_rates = payload["rates"]
+    if not raw_rates:
+        raise ValueError("Unexpected exchange-rate provider response: rates object is empty")
+
+    try:
+        rates = {str(key).upper(): float(value) for key, value in raw_rates.items()}
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("Unexpected exchange-rate provider response: invalid rate value") from exc
+
+    return rates
 
 
-def fetch_live_rates(base_currency: str = "USD") -> dict[str, float]:
+def _fetch_rates_with_source(base_currency: str = "USD") -> tuple[dict[str, float], str]:
+    """Fetch live rates and report whether the result came from the provider or fallback."""
     api_key = os.getenv("RATE_API_KEY")
     base_currency = base_currency.upper()
     url = f"https://open.er-api.com/v6/latest/{base_currency}"
@@ -39,21 +54,25 @@ def fetch_live_rates(base_currency: str = "USD") -> dict[str, float]:
     if api_key:
         url = f"https://api.exchangerate.host/live?access_key={api_key}&source={base_currency}&format=1"
 
-    headers = {"User-Agent": "currency-exchange-tracker/1.0"}
-    req = Request(url, headers=headers)
+    request = Request(url, headers={"User-Agent": "currency-exchange-tracker/1.0"})
     try:
-        with urlopen(req, timeout=8) as response:
+        with urlopen(request, timeout=8) as response:
             payload = json.loads(response.read().decode("utf-8"))
             rates = parse_rate_payload(payload)
-            if base_currency not in rates:
-                rates[base_currency] = 1.0
             save_rate_cache(base_currency, rates)
-            return rates
-    except (URLError, ValueError, TimeoutError):
-        return fetch_cached_rates(base_currency)
+            return rates, "live"
+    except (URLError, ValueError, TypeError, TimeoutError):
+        return fetch_cached_rates(base_currency), "cached"
+
+
+def fetch_live_rates(base_currency: str = "USD") -> dict[str, float]:
+    """Return rates while preserving the original public function interface."""
+    rates, _source = _fetch_rates_with_source(base_currency)
+    return rates
 
 
 def save_rate_cache(base_currency: str, rates: dict[str, float]) -> None:
+    """Persist the latest rate snapshot for use when the provider is unavailable."""
     db: Session = SessionLocal()
     try:
         record = db.query(RateCache).filter(RateCache.base_currency == base_currency.upper()).first()
@@ -70,14 +89,16 @@ def save_rate_cache(base_currency: str, rates: dict[str, float]) -> None:
 
 
 def fetch_cached_rates(base_currency: str = "USD") -> dict[str, float]:
+    """Return cached rates, falling back to built-in defaults if no cache exists."""
     db: Session = SessionLocal()
     try:
         record = db.query(RateCache).filter(RateCache.base_currency == base_currency.upper()).first()
         if record and record.rates:
             payload = json.loads(record.rates)
             if isinstance(payload, dict):
-                return {str(k).upper(): float(v) for k, v in payload.items()}
+                return {str(key).upper(): float(value) for key, value in payload.items()}
     except Exception:
+        # A corrupt cache must not prevent the application from using default rates.
         pass
     finally:
         db.close()
@@ -86,25 +107,33 @@ def fetch_cached_rates(base_currency: str = "USD") -> dict[str, float]:
 
 
 def convert_currency(amount: float, from_currency: str, to_currency: str) -> tuple[float, float, str]:
-    rates = fetch_live_rates(from_currency)
-    from_code = from_currency.upper()
-    to_code = to_currency.upper()
+    """Convert using a real rate entry; never invent a rate for an unknown target."""
+    rates, source = _fetch_rates_with_source(from_currency)
+    from_code = from_currency.upper().strip()
+    to_code = to_currency.upper().strip()
 
+    # The requested base is expected to have a rate of 1.0 in its own snapshot.
     if from_code not in rates:
-        rates[from_code] = 1.0
+        raise ValueError(f"Unsupported source currency: {from_code}")
     if to_code not in rates:
-        rates[to_code] = rates.get(from_code, 1.0)
+        raise ValueError(f"Unsupported target currency: {to_code}")
 
-    rate = rates.get(to_code, 1.0) / rates.get(from_code, 1.0)
+    base_rate = float(rates[from_code])
+    target_rate = float(rates[to_code])
+    if base_rate <= 0 or target_rate <= 0:
+        raise ValueError("Exchange rates must be positive numbers")
+
+    rate = target_rate / base_rate
     converted = amount * rate
-    return converted, rate, "live" if len(rates) > 0 else "cached"
+    return converted, rate, source
 
 
 def get_rate_snapshot(base_currency: str = "USD") -> dict[str, Any]:
-    rates = fetch_live_rates(base_currency)
+    """Return a rate snapshot with an accurate live-versus-fallback source label."""
+    rates, source = _fetch_rates_with_source(base_currency)
     return {
         "base_currency": base_currency.upper(),
         "rates": {code.upper(): round(float(value), 6) for code, value in rates.items()},
-        "source": "live" if rates != DEFAULT_RATES.copy() else "cached",
+        "source": source,
         "last_updated": datetime.now(timezone.utc).isoformat(),
     }
