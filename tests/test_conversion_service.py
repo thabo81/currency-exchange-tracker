@@ -77,6 +77,7 @@ def test_convert_currency_rejects_non_positive_rates(monkeypatch):
     with pytest.raises(ValueError, match="Exchange rates must be positive"):
         services.convert_currency(10, "USD", "ZAR")
 
+
 def test_convert_currency_rejects_missing_source_currency(monkeypatch):
     """An unavailable source currency must not be assigned an invented base rate."""
     monkeypatch.setattr(
@@ -87,3 +88,46 @@ def test_convert_currency_rejects_missing_source_currency(monkeypatch):
 
     with pytest.raises(ValueError, match="Unsupported source currency: XYZ"):
         services.convert_currency(10, "XYZ", "ZAR")
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"success": True},
+        {"rates": {}},
+        {"rates": {"USD": "not-a-number"}},
+    ],
+)
+def test_parse_rate_payload_rejects_malformed_provider_data(payload):
+    """Malformed provider data must not silently become default rates."""
+    with pytest.raises(ValueError):
+        services.parse_rate_payload(payload)
+
+
+def test_malformed_provider_response_uses_cached_rates(monkeypatch):
+    """A malformed live response must use fallback rates and report cached source."""
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return False
+
+        def read(self):
+            return b'{"success": true, "message": "unexpected response"}'
+
+    cached_rates = {"USD": 1.0, "ZAR": 18.0}
+    monkeypatch.setattr(services, "urlopen", lambda request, timeout: FakeResponse())
+    monkeypatch.setattr(services, "fetch_cached_rates", lambda base: cached_rates)
+    monkeypatch.setattr(
+        services,
+        "save_rate_cache",
+        lambda base, rates: pytest.fail("Malformed live rates must not be cached"),
+    )
+
+    rates, source = services._fetch_rates_with_source("USD")
+
+    assert rates == cached_rates
+    assert source == "cached"
