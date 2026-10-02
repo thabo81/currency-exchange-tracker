@@ -181,6 +181,16 @@ function showAuthMessage(message, isError = false) {
 }
 
 function showPanel(panelId) {
+  // Auth pages use the same helper for login/register panels.
+  const authPanel = document.getElementById(panelId);
+  if (authPanel?.classList.contains("auth-form-panel")) {
+    document.querySelectorAll(".auth-form-panel").forEach((panel) => {
+      panel.classList.toggle("active", panel.id === panelId);
+    });
+    return;
+  }
+
+  // Dashboard pages use navigation-driven content panels.
   const pills = document.querySelectorAll(".nav-pill[data-panel]");
   pills.forEach((pill) => pill.classList.toggle("active", pill.dataset.panel === panelId));
 
