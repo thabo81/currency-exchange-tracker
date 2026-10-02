@@ -8,8 +8,35 @@ function getToken() {
   return localStorage.getItem("access_token");
 }
 
-function clearToken() {
+function saveRefreshToken(token) {
+  localStorage.setItem("refresh_token", token);
+}
+
+function getRefreshToken() {
+  return localStorage.getItem("refresh_token");
+}
+
+function saveUser(user) {
+  if (user) {
+    localStorage.setItem("current_user", JSON.stringify(user));
+  }
+}
+
+function getStoredUser() {
+  const rawUser = localStorage.getItem("current_user");
+  if (!rawUser) return null;
+
+  try {
+    return JSON.parse(rawUser);
+  } catch {
+    return null;
+  }
+}
+
+function clearSession() {
   localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+  localStorage.removeItem("current_user");
 }
 
 function showPanel(panelId) {
@@ -18,16 +45,83 @@ function showPanel(panelId) {
   });
 }
 
+async function refreshAccessToken() {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) return false;
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/refresh-token?token=${encodeURIComponent(refreshToken)}`,
+      { method: "POST" }
+    );
+
+    if (!response.ok) {
+      clearSession();
+      return false;
+    }
+
+    const data = await response.json();
+    if (!data.access_token) {
+      clearSession();
+      return false;
+    }
+
+    saveToken(data.access_token);
+    return true;
+  } catch {
+    clearSession();
+    return false;
+  }
+}
+
+function buildRequestOptions(options = {}) {
+  return {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  };
+}
+
 async function requestJson(url, options = {}) {
-  const response = await fetch(url, {
-      ...options,
-      headers: { "Content-Type": "application/json", ...(options.headers || {}) },
-    });
-  
- 
+  let response = await fetch(url, buildRequestOptions(options));
+
+  // Retry one authenticated request after refreshing an expired access token.
+  // Only attempt this when the request already supplied an Authorization header.
+  const hasAuthHeader = Boolean(
+    options.headers?.Authorization || options.headers?.authorization
+  );
+
+  if (response.status === 401 && hasAuthHeader && !url.includes("/refresh-token")) {
+    const refreshed = await refreshAccessToken();
+
+    if (refreshed) {
+      const retryHeaders = {
+        ...(options.headers || {}),
+        Authorization: `Bearer ${getToken()}`,
+      };
+
+      response = await fetch(
+        url,
+        buildRequestOptions({
+          ...options,
+          headers: retryHeaders,
+        })
+      );
+    } else if (window.location.pathname !== "/login") {
+      // The session can no longer be recovered; send the user back to login
+      // instead of leaving a protected dashboard in a misleading state.
+      window.location.href = "/login";
+      return;
+    }
+  }
+
   const contentType = response.headers.get("content-type") || "";
-  const data = contentType.includes("application/json") ? await response.json() : await response.text();
- 
+  const data = contentType.includes("application/json")
+    ? await response.json()
+    : await response.text();
+
   if (!response.ok) {
     let message = "Request failed";
     if (typeof data === "string") {
@@ -36,16 +130,14 @@ async function requestJson(url, options = {}) {
       message = data.detail;
     } else if (data && Array.isArray(data.detail)) {
       // FastAPI/Pydantic 422 validation errors come back as an array of
-      // {loc, msg, type} objects, not a plain string — this used to
-      // produce a useless "[object Object]" alert. Now it shows the
-      // actual field-level messages instead.
+      // {loc, msg, type} objects, not a plain string.
       message = data.detail.map((e) => e.msg || JSON.stringify(e)).join("; ");
     } else if (data && data.detail) {
       message = JSON.stringify(data.detail);
     }
     throw new Error(message);
   }
- 
+
   return data;
 }
 
@@ -82,8 +174,11 @@ function initAuthFlow() {
         body: JSON.stringify({ email, password, remember_me: rememberMe }),
       });
 
-      // Store the access token so authenticated dashboard requests can use it.
+      // Store the full session so protected requests and the dashboard identity
+      // survive the redirect to /dashboard.
       saveToken(result.access_token);
+      saveRefreshToken(result.refresh_token);
+      saveUser(result.user);
       window.location.href = "/dashboard";
     } catch (error) {
       showAuthMessage(error.message, true);
@@ -120,6 +215,21 @@ function initAuthFlow() {
   });
 }
 
+function updateUserBadge() {
+  const userBadge = document.getElementById("user-name");
+  if (!userBadge) return;
+
+  const user = getStoredUser();
+  if (!user) return;
+
+  const displayName = [user.first_name, user.surname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  userBadge.textContent = displayName || user.email || "User";
+}
+
 function initDashboard() {
   const amountInput = document.getElementById("amount-input");
   const baseSelect = document.getElementById("base-currency");
@@ -144,7 +254,12 @@ function initDashboard() {
     try {
       const result = await requestJson(`${API_BASE}/convert`, {
         method: "POST",
-        body: JSON.stringify({ amount, from_currency: fromCurrency, to_currency: toCurrency }),
+        headers: authHeaders(),
+        body: JSON.stringify({
+          amount,
+          from_currency: fromCurrency,
+          to_currency: toCurrency,
+        }),
       });
 
       document.getElementById("converted-output").textContent = new Intl.NumberFormat("en-US", {
@@ -186,6 +301,7 @@ function initDashboard() {
 
 document.addEventListener("DOMContentLoaded", () => {
   initAuthFlow();
+  updateUserBadge();
   initDashboard();
 });
 /* ---------- APPEND all of this to the end of static/js/main.js ---------- */
