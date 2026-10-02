@@ -116,6 +116,95 @@ Before implementing the new visual system, brainstorm and choose:
 
 The final palette must consider WCAG text contrast, positive/negative market states, warning/error states, disabled states, chart readability, dark/light mode if implemented, and semantic meaning of color.
 
+### Selected working palette — fintech cyan / mint
+
+The visual direction is now defined as a modern fintech palette using off-white/white surfaces in light mode and deep slate surfaces in dark mode. The base colors below are the approved starting point for Phase 3 visual implementation.
+
+#### Light theme
+
+| Semantic role | Color | Intended use |
+|---|---|---|
+| Canvas | `#F8F9FA` | Main page/background surface |
+| Surface | `#FFFFFF` | Cards, panels, inputs, modal/drawer surfaces |
+| Primary | `#0F8B8D` | Navigation, structural UI, primary brand elements |
+| Accent | `#00B894` | Highlights, selected states, chart emphasis, positive visual accents |
+| Success | `#00B894` | Success/positive status semantics; keep as a separate design token even while it shares the accent value |
+| Text | `#2D3436` | Primary body text and headings |
+| Text muted | `#636E72` | Secondary text, captions, metadata |
+| Border | `#DFE6E9` | Dividers, input/card borders |
+| Warning | `#F59E0B` | Threshold warnings, caution states, attention indicators |
+| Error | `#D63031` | Destructive/error states |
+
+#### Dark theme
+
+| Semantic role | Color | Intended use |
+|---|---|---|
+| Canvas | `#12181A` | Main page/background surface |
+| Surface | `#1E2528` | Cards, panels, inputs, modal/drawer surfaces |
+| Primary | `#14A3A6` | Navigation, structural UI, primary brand elements |
+| Accent | `#26E6C3` | Highlights, selected states, chart emphasis, positive visual accents |
+| Success | `#26E6C3` | Success/positive status semantics; keep as a separate design token even while it shares the accent value |
+| Text | `#FFFFFF` | Primary body text and headings |
+| Text muted | `#94A3B8` | Secondary text, captions, metadata |
+| Border | `#2D3748` | Dividers, input/card borders |
+| Warning | `#F59E0B` | Threshold warnings, caution states, attention indicators |
+| Error | `#FF7675` | Destructive/error states |
+
+#### CSS design tokens
+
+Use semantic CSS variables rather than hard-coding colors throughout component styles:
+
+```css
+:root {
+    --color-canvas: #F8F9FA;
+    --color-surface: #FFFFFF;
+    --color-primary: #0F8B8D;
+    --color-accent: #00B894;
+    --color-success: #00B894;
+    --color-text: #2D3436;
+    --color-text-muted: #636E72;
+    --color-border: #DFE6E9;
+    --color-warning: #F59E0B;
+    --color-error: #D63031;
+}
+
+[data-theme="dark"] {
+    --color-canvas: #12181A;
+    --color-surface: #1E2528;
+    --color-primary: #14A3A6;
+    --color-accent: #26E6C3;
+    --color-success: #26E6C3;
+    --color-text: #FFFFFF;
+    --color-text-muted: #94A3B8;
+    --color-border: #2D3748;
+    --color-warning: #F59E0B;
+    --color-error: #FF7675;
+}
+```
+
+#### Contrast and usage rules
+
+The palette is intentionally retained, but individual colors must be used according to their contrast characteristics rather than treated as interchangeable text colors.
+
+- Use `#2D3436`, `#636E72`, and white text for normal-size content where the selected surface provides sufficient contrast.
+- Treat `#00B894` and `#26E6C3` primarily as accents, icons, chart lines, selected states, badges, and large/high-emphasis content rather than default body text on light surfaces.
+- Use the cyan primary colors for structural UI and controls; do not rely on them as the only visual signal for meaning.
+- Keep warning and error states semantically distinct from positive/success states.
+- Never communicate a state through color alone; pair color with text, icons, labels, position, or another accessible indicator.
+
+#### Chart and threshold semantics
+
+Charts will use color by meaning rather than decoration:
+
+- Cyan: neutral/current series or primary interaction state.
+- Mint: positive movement or favorable state.
+- Red: negative movement or breach/error state.
+- Amber: warning/near-threshold state.
+- Threshold line: a visually distinct reference treatment that remains readable in both themes.
+- Threshold breach: visually emphasize only the affected portions/markers rather than tinting the entire chart indiscriminately.
+
+The chart must also provide textual threshold/state information so the interpretation does not depend on color alone.
+
 ### Typography
 Decide the primary UI font, heading scale, body scale, number/financial-value treatment, and table density.
 
