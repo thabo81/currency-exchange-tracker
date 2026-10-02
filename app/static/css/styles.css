@@ -69,7 +69,7 @@ button {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--color-primary) 28%, transparent);
+  outline: 3px solid rgba(15, 139, 141, 0.28);
   outline-offset: 2px;
 }
 
@@ -189,7 +189,7 @@ input::placeholder {
 input:focus,
 select:focus {
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-primary) 12%, transparent);
+  box-shadow: 0 0 0 4px rgba(15, 139, 141, 0.12);
 }
 
 .two-col {
@@ -324,7 +324,7 @@ select:focus {
 }
 
 .nav-pill.active {
-  background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+  background: rgba(15, 139, 141, 0.10);
   color: var(--color-primary);
 }
 
@@ -416,7 +416,7 @@ select:focus {
 }
 
 .status-dot.online {
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-success) 13%, transparent);
+  box-shadow: 0 0 0 4px rgba(0, 184, 148, 0.13);
 }
 
 .main-panel {
@@ -772,17 +772,17 @@ select:focus {
 }
 
 .status-badge.positive {
-  background: color-mix(in srgb, var(--color-success) 13%, var(--color-surface));
+  background: rgba(0, 184, 148, 0.13);
   color: var(--color-success);
 }
 
 .status-badge.warning {
-  background: color-mix(in srgb, var(--color-warning) 14%, var(--color-surface));
+  background: rgba(245, 158, 11, 0.14);
   color: var(--color-warning);
 }
 
 .status-badge.negative {
-  background: color-mix(in srgb, var(--color-error) 12%, var(--color-surface));
+  background: rgba(214, 48, 49, 0.12);
   color: var(--color-error);
 }
 
