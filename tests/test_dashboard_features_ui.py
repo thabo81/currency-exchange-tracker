@@ -8,22 +8,36 @@ from pages.dashboard_page import DashboardPage
 # ---------------------------------------------------------------------------
 
 def test_favorite_pair_can_be_added_and_removed(authenticated_session, base_url):
-    """The watchlist star toggles a currency pair through the real API."""
+    """A new user starts empty; stars add/remove a saved pair and it persists after refresh."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
     dashboard.go_to_overview()
 
-    before = dashboard.get_first_favorite_star_text()
-    assert before in {"☆", "★"}
+    # A newly registered user must not inherit any default favorite pairs.
+    assert dashboard.is_favorites_empty()
+    assert dashboard.get_favorite_card_texts() == []
 
-    dashboard.toggle_first_favorite()
+    pair = "USD/ZAR"
 
-    after_add = dashboard.get_first_favorite_star_text()
-    assert after_add != before
+    # The pair is offered separately as an unsaved option with an outline star.
+    dashboard.toggle_candidate_favorite(pair)
+    dashboard.wait_for_favorite_count(1)
 
-    dashboard.toggle_first_favorite()
-    after_remove = dashboard.get_first_favorite_star_text()
-    assert after_remove == before
+    # The saved favorite is now shown in the user's personal watchlist.
+    assert any(pair in item for item in dashboard.get_favorite_card_texts())
+    assert dashboard.get_favorite_star_text(pair) == "★"
+
+    # Refresh to prove the favorite is persisted by the backend, not only cached in JS.
+    dashboard.driver.refresh()
+    dashboard.go_to_overview()
+    dashboard.wait_for_favorite_count(1)
+    assert any(pair in item for item in dashboard.get_favorite_card_texts())
+    assert dashboard.get_favorite_star_text(pair) == "★"
+
+    # Clicking the filled star removes only that user's saved favorite.
+    dashboard.toggle_favorite_pair(pair)
+    dashboard.wait_for_favorite_count(0)
+    assert dashboard.is_favorites_empty()
 
 
 # ---------------------------------------------------------------------------
