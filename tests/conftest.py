@@ -92,10 +92,19 @@ def authenticated_session(browser, base_url):
 
         login_response = api_client.post("/login", json={"email": email, "password": password})
         assert login_response.status_code == 200, login_response.text
-        token = login_response.json()["access_token"]
+        login_data = login_response.json()
 
     browser.get(f"{base_url}/dashboard")
-    browser.execute_script("window.localStorage.setItem('access_token', arguments[0]);", token)
+    browser.execute_script(
+        """
+        window.localStorage.setItem('access_token', arguments[0]);
+        window.localStorage.setItem('refresh_token', arguments[1]);
+        window.localStorage.setItem('current_user', JSON.stringify(arguments[2]));
+        """,
+        login_data["access_token"],
+        login_data["refresh_token"],
+        login_data["user"],
+    )
     browser.refresh()
 
     return browser
