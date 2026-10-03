@@ -117,6 +117,31 @@ def test_convert_currency_code_length_boundaries(client, currency_code, expected
     assert response.status_code == expected_status
 
 
+def test_conversion_preview_does_not_create_history_record(client):
+    """Previewing a conversion must not create a persistent History event."""
+    tokens = register_and_login(
+        client,
+        email="conversion-preview@example.com",
+    ).json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    preview = client.post(
+        "/convert/preview",
+        json={
+            "amount": 100,
+            "from_currency": "USD",
+            "to_currency": "ZAR",
+        },
+        headers=headers,
+    )
+    assert preview.status_code == 200
+    assert preview.json()["converted_amount"] > 0
+
+    history = client.get("/history/recent", headers=headers)
+    assert history.status_code == 200
+    assert history.json() == []
+
+
 def test_authenticated_conversion_is_saved_to_history(client):
     """Authenticated conversions must be associated with the logged-in user."""
     tokens = register_and_login(
