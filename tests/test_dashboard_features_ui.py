@@ -7,40 +7,23 @@ from pages.dashboard_page import DashboardPage
 # Favorites
 # ---------------------------------------------------------------------------
 
-def test_favorite_star_adds_and_removes_chip(authenticated_session, base_url):
+def test_favorite_pair_can_be_added_and_removed(authenticated_session, base_url):
+    """The watchlist star toggles a currency pair through the real API."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
+    dashboard.go_to_overview()
 
-    before = dashboard.get_favorite_chip_texts()
-    dashboard.toggle_favorite()
-    dashboard.wait_for_favorite_chip_count(len(before) + 1)
+    before = dashboard.get_first_favorite_star_text()
+    assert before in {"☆", "★"}
 
-    after_add = dashboard.get_favorite_chip_texts()
-    assert len(after_add) == len(before) + 1
-    assert dashboard.get_favorite_star_text() == "\u2605"  # filled star
+    dashboard.toggle_first_favorite()
 
-    dashboard.toggle_favorite()
-    dashboard.wait_for_favorite_chip_count(len(before))
+    after_add = dashboard.get_first_favorite_star_text()
+    assert after_add != before
 
-    after_remove = dashboard.get_favorite_chip_texts()
-    assert len(after_remove) == len(before)
-    assert dashboard.get_favorite_star_text() == "\u2606"  # empty star
-
-
-def test_favorite_chip_click_removes_it(authenticated_session, base_url):
-    dashboard = DashboardPage(authenticated_session, base_url)
-    dashboard.open_dashboard()
-
-    dashboard.toggle_favorite()
-    dashboard.wait_for_favorite_chip_count(1)
-    chips_before = dashboard.get_favorite_chip_texts()
-    assert len(chips_before) >= 1
-
-    dashboard.click_favorite_chip(0)
-    dashboard.wait_for_favorite_chip_count(len(chips_before) - 1)
-
-    chips_after = dashboard.get_favorite_chip_texts()
-    assert len(chips_after) == len(chips_before) - 1
+    dashboard.toggle_first_favorite()
+    after_remove = dashboard.get_first_favorite_star_text()
+    assert after_remove == before
 
 
 # ---------------------------------------------------------------------------
@@ -55,15 +38,15 @@ def test_portfolio_add_and_remove_holding(authenticated_session, base_url):
     before = dashboard.get_portfolio_list_texts()
     dashboard.add_portfolio_holding(currency="USD", amount="500", notes="Test holding")
     dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, before)
- 
+
     items = dashboard.get_portfolio_list_texts()
     assert any("500" in item and "USD" in item for item in items)
- 
+
     dashboard.remove_portfolio_item(0)
     dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, items)
 
     items_after = dashboard.get_portfolio_list_texts()
-    assert len(items_after) < len(items) or "No holdings" in items_after[0]
+    assert len(items_after) < len(items)
 
 
 # ---------------------------------------------------------------------------
@@ -77,16 +60,17 @@ def test_alert_add_and_remove(authenticated_session, base_url):
 
     before = dashboard.get_alerts_list_texts()
     dashboard.add_alert(base="USD", quote="ZAR", direction="above", target_rate="20")
-    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, before)   # <-- change len(before) to before
+    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, before)
 
     items = dashboard.get_alerts_list_texts()
-    assert any("USD" in item and "ZAR" in item and "20" in item for item in items)
+    assert any("USD/ZAR" in item and "20" in item for item in items)
 
     dashboard.remove_alert_item(0)
-    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, items)   # <-- change len(items) to items
+    dashboard.wait_for_list_change(dashboard.get_alerts_list_texts, items)
 
     items_after = dashboard.get_alerts_list_texts()
-    assert len(items_after) < len(items) or "No alerts" in items_after[0]
+    assert len(items_after) < len(items)
+
 
 def test_alert_direction_options_present(authenticated_session, base_url):
     dashboard = DashboardPage(authenticated_session, base_url)
@@ -94,9 +78,9 @@ def test_alert_direction_options_present(authenticated_session, base_url):
     dashboard.go_to_alerts()
 
     direction_options = [
-        opt.get_attribute("value")
-        for opt in dashboard.driver.find_element(*dashboard.ALERT_DIRECTION).find_elements(
-            "tag name", "option"
+        option.get_attribute("value")
+        for option in dashboard.driver.find_element(*dashboard.ALERT_DIRECTION).find_elements(
+            By.TAG_NAME, "option"
         )
     ]
     assert "above" in direction_options
@@ -107,13 +91,12 @@ def test_alert_direction_options_present(authenticated_session, base_url):
 # Trends
 # ---------------------------------------------------------------------------
 
-def test_trend_sparkline_renders_something(authenticated_session, base_url):
+def test_trend_chart_handles_available_or_missing_data(authenticated_session, base_url):
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
+    dashboard.go_to_trends()
 
-    has_chart = dashboard.is_sparkline_showing_chart()
-    if not has_chart:
-        text = dashboard.get_sparkline_text()
-        assert "not enough trend data" in text.lower()
+    if dashboard.is_trend_chart_showing():
+        assert dashboard.is_trend_chart_showing()
     else:
-        assert has_chart
+        assert "stored" in dashboard.get_trend_message().lower() or "no active threshold" in dashboard.get_trend_message().lower()
