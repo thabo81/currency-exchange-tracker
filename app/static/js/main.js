@@ -1185,83 +1185,16 @@ async function loadTrend() {
 }
 
 function renderTrendChart(points, threshold) {
+  // The actual chart is rendered by the React/Recharts widget.
+  // main.js only passes the API data and active alert threshold to it.
   const chart = document.getElementById("trend-chart");
   if (!chart) return;
 
-  if (!points.length) {
-    chart.innerHTML = '<div class="empty-state"><span>⌁</span><b>Trend data unavailable</b><p>There are no stored observations for this pair and range.</p></div>';
-    return;
-  }
+  const pair = document.getElementById("trend-pair")?.value || "USD/ZAR";
+  const payload = { points, threshold: threshold ?? null, pair };
 
-  const width = 980;
-  const height = 320;
-  const left = 52;
-  const right = 18;
-  const top = 18;
-  const bottom = 32;
-  const chartWidth = width - left - right;
-  const chartHeight = height - top - bottom;
-
-  const rates = points.map((point) => Number(point.rate));
-  const minData = Math.min(...rates, threshold ?? rates[0]);
-  const maxData = Math.max(...rates, threshold ?? rates[0]);
-  const pad = Math.max((maxData - minData) * 0.14, maxData === minData ? .1 : .005);
-  const min = minData - pad;
-  const max = maxData + pad;
-
-  const x = (index) => left + (index / Math.max(points.length - 1, 1)) * chartWidth;
-  const y = (rate) => top + ((max - rate) / Math.max(max - min, 1e-9)) * chartHeight;
-
-  const grid = [0, .25, .5, .75, 1].map((fraction) => {
-    const yy = top + chartHeight * fraction;
-    return `<line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="var(--line)" stroke-width="1" />`;
-  }).join("");
-
-  let thresholdLine = "";
-  if (threshold != null) {
-    const yy = y(threshold);
-    thresholdLine = `
-      <line x1="${left}" y1="${yy}" x2="${width-right}" y2="${yy}" stroke="var(--warning)" stroke-width="2" stroke-dasharray="7 6" />
-      <text x="${left+8}" y="${Math.max(top+13, yy-7)}" fill="var(--warning)" font-size="12" font-weight="700">Threshold ${formatRate(threshold, 4)}</text>
-    `;
-  }
-
-  const segments = [];
-  for (let i = 1; i < rates.length; i += 1) {
-    const prev = rates[i - 1];
-    const current = rates[i];
-    let stroke = "var(--brand)";
-
-    if (threshold != null) {
-      if (prev >= threshold && current >= threshold) stroke = "var(--error)";
-      else if (prev < threshold && current < threshold) stroke = "var(--good)";
-      else stroke = "var(--warning)";
-    }
-
-    segments.push(
-      `<line x1="${x(i-1)}" y1="${y(prev)}" x2="${x(i)}" y2="${y(current)}" stroke="${stroke}" stroke-width="3.5" stroke-linecap="round" />`
-    );
-  }
-
-  const markers = points.map((point, index) => {
-    const rate = Number(point.rate);
-    const fill = threshold == null ? "var(--brand)" : rate >= threshold ? "var(--error)" : "var(--good)";
-    return `<circle cx="${x(index)}" cy="${y(rate)}" r="2.9" fill="${fill}" />`;
-  }).join("");
-
-  const firstDate = new Date(points[0].recorded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const lastDate = new Date(points.at(-1).recorded_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-  chart.innerHTML = `
-    <svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Exchange rate trend chart">
-      ${grid}
-      ${thresholdLine}
-      ${segments.join("")}
-      ${markers}
-      <text x="${left}" y="${height-8}" fill="var(--muted-ink)" font-size="11">${firstDate}</text>
-      <text x="${width-right}" y="${height-8}" text-anchor="end" fill="var(--muted-ink)" font-size="11">${lastDate}</text>
-    </svg>
-  `;
+  window.__fxTrendPayload = payload;
+  window.dispatchEvent(new CustomEvent("fx-trend-data", { detail: payload }));
 }
 
 function initTrends() {
