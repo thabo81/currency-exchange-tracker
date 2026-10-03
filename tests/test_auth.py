@@ -117,6 +117,76 @@ def test_convert_currency_code_length_boundaries(client, currency_code, expected
     assert response.status_code == expected_status
 
 
+def test_conversion_preview_does_not_create_history_record(client):
+    """Previewing a conversion must not create a persistent History event."""
+    tokens = register_and_login(
+        client,
+        email="conversion-preview@example.com",
+    ).json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    preview = client.post(
+        "/convert/preview",
+        json={
+            "amount": 100,
+            "from_currency": "USD",
+            "to_currency": "ZAR",
+        },
+        headers=headers,
+    )
+    assert preview.status_code == 200
+    assert preview.json()["converted_amount"] > 0
+
+    history = client.get("/history/recent", headers=headers)
+    assert history.status_code == 200
+    assert history.json() == []
+
+
+def test_authenticated_conversion_is_saved_to_history(client):
+    """Authenticated conversions must be associated with the logged-in user."""
+    tokens = register_and_login(
+        client,
+        email="conversion-history@example.com",
+    ).json()
+
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+
+    conversion = client.post(
+        "/convert",
+        json={
+            "amount": 100,
+            "from_currency": "USD",
+            "to_currency": "ZAR",
+        },
+        headers=headers,
+    )
+    assert conversion.status_code == 200
+
+    history = client.get("/history/recent", headers=headers)
+    assert history.status_code == 200
+
+    rows = history.json()
+    assert len(rows) == 1
+    assert rows[0]["amount"] == 100
+    assert rows[0]["base_currency"] == "USD"
+    assert rows[0]["quote_currency"] == "ZAR"
+    assert rows[0]["converted_amount"] > 0
+
+
+def test_invalid_access_token_is_rejected_for_authenticated_conversion(client):
+    """An explicitly supplied invalid token must not silently become guest access."""
+    response = client.post(
+        "/convert",
+        json={
+            "amount": 100,
+            "from_currency": "USD",
+            "to_currency": "ZAR",
+        },
+        headers={"Authorization": "Bearer invalid-token"},
+    )
+    assert response.status_code == 401
+
+
 def test_portfolio_negative_amount_currently_accepted(client):
     """Documents a known validation gap until amount_held gets a positive-value constraint."""
     tokens = register_and_login(client, email="portfolio-gap@example.com").json()

@@ -1,47 +1,45 @@
-from selenium.common.exceptions import StaleElementReferenceException
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select, WebDriverWait
 
 from pages.base_page import BasePage
 
 
 class DashboardPage(BasePage):
+    """Page object for the premium dashboard UI."""
+
     AMOUNT_INPUT = (By.ID, "amount-input")
     BASE_CURRENCY = (By.ID, "base-currency")
     TARGET_CURRENCY = (By.ID, "target-currency")
     SWAP_BUTTON = (By.ID, "swap-currency")
-    CONVERT_BUTTON = (By.ID, "convert-button")
+    CONVERT_BUTTON = (By.CSS_SELECTOR, "#convert-form button[type='submit']")
     CONVERTED_OUTPUT = (By.ID, "converted-output")
     RATE_BADGE = (By.ID, "rate-badge")
     RATE_SOURCE = (By.ID, "rate-source")
-    HISTORY_LIST = (By.CSS_SELECTOR, "#history-list li")
-    NAV_PILL_OVERVIEW = (By.CSS_SELECTOR, '.nav-pill[data-panel="overview-panel"]')
-    NAV_PILL_PORTFOLIO = (By.CSS_SELECTOR, '.nav-pill[data-panel="portfolio-panel"]')
-    NAV_PILL_ALERTS = (By.CSS_SELECTOR, '.nav-pill[data-panel="alerts-panel"]')
- 
-    FAVORITE_TOGGLE = (By.ID, "favorite-toggle")
-    FAVORITE_CHIPS = (By.CSS_SELECTOR, "#favorite-chips .chip")
- 
-    PORTFOLIO_PANEL = (By.ID, "portfolio-panel")
-    PORTFOLIO_CURRENCY_INPUT = (By.ID, "portfolio-currency")
-    PORTFOLIO_AMOUNT_INPUT = (By.ID, "portfolio-amount")
-    PORTFOLIO_NOTES_INPUT = (By.ID, "portfolio-notes")
-    PORTFOLIO_SUBMIT = (By.CSS_SELECTOR, "#portfolio-form button[type='submit']")
-    PORTFOLIO_LIST_ITEMS = (By.CSS_SELECTOR, "#portfolio-list li")
- 
-    ALERTS_PANEL = (By.ID, "alerts-panel")
-    ALERT_BASE = (By.ID, "alert-base")
-    ALERT_QUOTE = (By.ID, "alert-quote")
+
+    FAVORITE_STARS = (By.CSS_SELECTOR, "#overview-pairs .star-button")
+    FAVORITE_CARDS = (By.CSS_SELECTOR, "#overview-pairs .pair-card")
+
+    PORTFOLIO_PANEL = (By.ID, "view-portfolio")
+    PORTFOLIO_OPEN = (By.ID, "open-holding-modal")
+    PORTFOLIO_CURRENCY_INPUT = (By.ID, "holding-currency")
+    PORTFOLIO_AMOUNT_INPUT = (By.ID, "holding-amount")
+    PORTFOLIO_LABEL_INPUT = (By.ID, "holding-label")
+    PORTFOLIO_SUBMIT = (By.CSS_SELECTOR, "#holding-form button[type='submit']")
+    PORTFOLIO_ROWS = (By.CSS_SELECTOR, "#portfolio-list .table-row")
+    PORTFOLIO_MODAL = (By.ID, "holding-modal")
+
+    ALERTS_PANEL = (By.ID, "view-alerts")
+    ALERT_OPEN = (By.ID, "open-alert-modal")
+    ALERT_PAIR = (By.ID, "alert-pair")
     ALERT_DIRECTION = (By.ID, "alert-direction")
     ALERT_TARGET_INPUT = (By.ID, "alert-target")
-    ALERT_SUBMIT = (By.CSS_SELECTOR, "#alert-form button[type='submit']")
-    ALERTS_LIST_ITEMS = (By.CSS_SELECTOR, "#alerts-list li")
- 
-    SPARKLINE = (By.ID, "sparkline")
+    ALERT_SUBMIT = (By.CSS_SELECTOR, "#alert-create-form button[type='submit']")
+    ALERT_ROWS = (By.CSS_SELECTOR, "#alerts-list .alert-card")
 
-    
+    TREND_CHART = (By.CSS_SELECTOR, "#trend-chart svg")
+    TREND_MESSAGE = (By.ID, "trend-threshold-message")
+
     def open_dashboard(self):
         self.open(f"{self.base_url}/dashboard")
 
@@ -49,10 +47,10 @@ class DashboardPage(BasePage):
         self.type(*self.AMOUNT_INPUT, amount)
 
     def select_base_currency(self, value: str):
-        self.driver.find_element(*self.BASE_CURRENCY).send_keys(value)
+        Select(self.driver.find_element(*self.BASE_CURRENCY)).select_by_value(value)
 
     def select_target_currency(self, value: str):
-        self.driver.find_element(*self.TARGET_CURRENCY).send_keys(value)
+        Select(self.driver.find_element(*self.TARGET_CURRENCY)).select_by_value(value)
 
     def swap_currencies(self):
         self.click(*self.SWAP_BUTTON)
@@ -69,73 +67,87 @@ class DashboardPage(BasePage):
     def get_rate_source(self):
         return self.get_text(*self.RATE_SOURCE)
 
-    def go_to_portfolio(self):
-        self.click(*self.NAV_PILL_PORTFOLIO)
-        WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located(self.PORTFOLIO_PANEL))
- 
-    def go_to_alerts(self):
-        self.click(*self.NAV_PILL_ALERTS)
-        WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located(self.ALERTS_PANEL))
- 
+    def go_to_view(self, view: str):
+        locator = (By.CSS_SELECTOR, f'.nav-link[data-view="{view}"]')
+        self.click(*locator)
+        WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located((By.ID, f"view-{view}"))
+        )
+
     def go_to_overview(self):
-        self.click(*self.NAV_PILL_OVERVIEW)
- 
-    def toggle_favorite(self):
-        self.click(*self.FAVORITE_TOGGLE)
- 
-    def get_favorite_star_text(self):
-        return self.get_text(*self.FAVORITE_TOGGLE)
- 
-    def get_favorite_chip_texts(self):
-        return [el.text for el in self.driver.find_elements(*self.FAVORITE_CHIPS)]
- 
-    def click_favorite_chip(self, index=0):
-        self.driver.find_elements(*self.FAVORITE_CHIPS)[index].click()
- 
+        self.go_to_view("overview")
+
+    def go_to_portfolio(self):
+        self.go_to_view("portfolio")
+
+    def go_to_alerts(self):
+        self.go_to_view("alerts")
+
+    def go_to_trends(self):
+        self.go_to_view("trends")
+
+    def toggle_first_favorite(self):
+        self.driver.find_elements(*self.FAVORITE_STARS)[0].click()
+
+    def get_first_favorite_star_text(self):
+        return self.driver.find_elements(*self.FAVORITE_STARS)[0].text
+
+    def get_favorite_card_texts(self):
+        return [element.text for element in self.driver.find_elements(*self.FAVORITE_CARDS)]
+
     def add_portfolio_holding(self, currency: str, amount: str, notes: str = ""):
-        self.type(*self.PORTFOLIO_CURRENCY_INPUT, currency)
+        self.click(*self.PORTFOLIO_OPEN)
+        WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located(self.PORTFOLIO_MODAL)
+        )
+
+        self.driver.find_element(*self.PORTFOLIO_CURRENCY_INPUT).send_keys(currency)
         self.type(*self.PORTFOLIO_AMOUNT_INPUT, amount)
         if notes:
-            self.type(*self.PORTFOLIO_NOTES_INPUT, notes)
+            self.type(*self.PORTFOLIO_LABEL_INPUT, notes)
         self.click(*self.PORTFOLIO_SUBMIT)
- 
+
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located(self.PORTFOLIO_MODAL)
+        )
+
     def get_portfolio_list_texts(self):
-        return [el.text for el in self.driver.find_elements(*self.PORTFOLIO_LIST_ITEMS)]
- 
+        return [el.text for el in self.driver.find_elements(*self.PORTFOLIO_ROWS)]
+
     def remove_portfolio_item(self, index=0):
-        item = self.driver.find_elements(*self.PORTFOLIO_LIST_ITEMS)[index]
-        item.find_element(By.CSS_SELECTOR, "button").click()
- 
+        row = self.driver.find_elements(*self.PORTFOLIO_ROWS)[index]
+        row.find_element(By.CSS_SELECTOR, "button[data-remove-holding]").click()
+
     def add_alert(self, base: str, quote: str, direction: str, target_rate: str):
-        Select(self.driver.find_element(*self.ALERT_BASE)).select_by_value(base)
-        Select(self.driver.find_element(*self.ALERT_QUOTE)).select_by_value(quote)
+        self.click(*self.ALERT_OPEN)
+        WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located((By.ID, "alert-modal"))
+        )
+
+        pair = f"{base}/{quote}"
+        Select(self.driver.find_element(*self.ALERT_PAIR)).select_by_value(pair)
         Select(self.driver.find_element(*self.ALERT_DIRECTION)).select_by_value(direction)
         self.type(*self.ALERT_TARGET_INPUT, target_rate)
         self.click(*self.ALERT_SUBMIT)
- 
-    def get_alerts_list_texts(self):
-        return [el.text for el in self.driver.find_elements(*self.ALERTS_LIST_ITEMS)]
- 
-    def remove_alert_item(self, index=0):
-        item = self.driver.find_elements(*self.ALERTS_LIST_ITEMS)[index]
-        item.find_element(By.CSS_SELECTOR, "button").click()
- 
-    def is_sparkline_showing_chart(self) -> bool:
-        return len(self.driver.find_elements(By.CSS_SELECTOR, "#sparkline svg")) > 0
- 
-    def get_sparkline_text(self):
-        return self.get_text(*self.SPARKLINE)
 
-    def wait_for_favorite_chip_count(self, expected_count: int, timeout: int = 5):
-        WebDriverWait(
-            self.driver, timeout, ignored_exceptions=(StaleElementReferenceException,)
-        ).until(
-            lambda d: len(self.get_favorite_chip_texts()) == expected_count
+        WebDriverWait(self.driver, 5).until(
+            EC.invisibility_of_element_located((By.ID, "alert-modal"))
         )
- 
+
+    def get_alerts_list_texts(self):
+        return [el.text for el in self.driver.find_elements(*self.ALERT_ROWS)]
+
+    def remove_alert_item(self, index=0):
+        row = self.driver.find_elements(*self.ALERT_ROWS)[index]
+        row.find_element(By.CSS_SELECTOR, "button[data-remove-alert]").click()
+
+    def is_trend_chart_showing(self) -> bool:
+        return bool(self.driver.find_elements(*self.TREND_CHART))
+
+    def get_trend_message(self):
+        return self.get_text(*self.TREND_MESSAGE)
+
     def wait_for_list_change(self, get_texts_fn, previous_texts, timeout: int = 5):
-        WebDriverWait(
-            self.driver, timeout, ignored_exceptions=(StaleElementReferenceException,)
-        ).until(
-            lambda d: get_texts_fn() != previous_texts
+        WebDriverWait(self.driver, timeout).until(
+            lambda _driver: get_texts_fn() != previous_texts
         )
