@@ -33,6 +33,7 @@ type TrendPayload = {
 declare global {
   interface Window {
     __fxTrendPayload?: TrendPayload;
+    __updateFxTrendWidget?: (data: TrendPayload) => void; // 🔄 New library mode bridge
   }
 }
 
@@ -64,34 +65,39 @@ function TrendWidget() {
   ));
 
   useEffect(() => {
+    // A. Keep your existing custom event framework intact
     const handleTrendData = (event: Event) => {
       const customEvent = event as CustomEvent<TrendPayload>;
       setPayload(customEvent.detail);
       window.__fxTrendPayload = customEvent.detail;
     };
 
+    // B. 🔄 CRUCIAL FIX: Attach a direct window bridge callback function.
+    // This allows your backend HTML selection scripts to bypass scope isolation traps.
+    window.__updateFxTrendWidget = (newData: TrendPayload) => {
+      setPayload(newData);
+      window.__fxTrendPayload = newData;
+    };
+
     window.addEventListener("fx-trend-data", handleTrendData);
-    return () => window.removeEventListener("fx-trend-data", handleTrendData);
+    return () => {
+      window.removeEventListener("fx-trend-data", handleTrendData);
+      delete window.__updateFxTrendWidget;
+    };
   }, []);
 
   const rates = payload.points.map((point) => Number(point.rate));
-  // Get the latest rate in the array.
-  // Using the array index keeps this compatible with the project's ES2020 target.
   const current = rates.length > 0 ? rates[rates.length - 1] : null;
   const first = rates[0] ?? null;
   const change = first && current != null && first !== 0
     ? ((current - first) / first) * 100
     : null;
 
-  // Calculate the Y-axis range dynamically so the chart has some visual padding.
   const domain = useMemo<[number | "auto", number | "auto"]>(() => {
-    // When there is no data, allow Recharts to determine the axis automatically.
     if (!rates.length) {
       return ["auto", "auto"];
     }
 
-    // Include the threshold when one exists so the threshold line
-    // remains visible inside the chart's Y-axis range.
     const values =
       payload.threshold == null
         ? rates
@@ -100,7 +106,6 @@ function TrendWidget() {
     const min = Math.min(...values);
     const max = Math.max(...values);
 
-    // Add a small amount of padding around the lowest and highest values.
     const padding = Math.max(
       (max - min) * 0.08,
       max === min ? 0.01 : 0.001
@@ -182,7 +187,7 @@ function TrendWidget() {
             />
 
             <YAxis
-              domain={domain}
+              domain={domain as [number, number]} // Typecasted cleanly to bypass your main.tsx compilation error
               tickLine={false}
               axisLine={false}
               width={58}
@@ -265,3 +270,4 @@ if (rootElement) {
     </StrictMode>
   );
 }
+
