@@ -693,6 +693,24 @@ function pairCardMarkup(data, mode = "favorite") {
   `;
 }
 
+function bindFavoriteButtons(container) {
+  // Bind each star after the cards are rendered because the cards use innerHTML.
+  // Delegated event handling also avoids keeping references to replaced DOM nodes.
+  if (!container || container.dataset.favoriteBound === "true") return;
+  container.dataset.favoriteBound = "true";
+
+  container.addEventListener("click", async (event) => {
+    const button = event.target.closest("[data-pair-toggle]");
+    if (!button || !container.contains(button)) return;
+
+    const pair = button.dataset.pairToggle;
+    if (!pair) return;
+
+    const [base, quote] = pair.split("/");
+    await toggleFavoritePair(base, quote);
+  });
+}
+
 async function renderFavoriteCandidates() {
   const section = document.getElementById("favorite-candidates-section");
   const container = document.getElementById("favorite-candidates");
@@ -730,6 +748,8 @@ async function renderOverviewPairs() {
       </article>
     `;
     await renderFavoriteCandidates();
+    bindFavoriteButtons(container);
+    bindFavoriteButtons(document.getElementById("favorite-candidates"));
     return;
   }
 
@@ -738,6 +758,10 @@ async function renderOverviewPairs() {
 
   container.innerHTML = cards.map((card) => pairCardMarkup(card, "favorite")).join("");
   await renderFavoriteCandidates();
+
+  // Rebind once after rendering; the listener survives future innerHTML updates.
+  bindFavoriteButtons(container);
+  bindFavoriteButtons(document.getElementById("favorite-candidates"));
 }
 
 
