@@ -4,457 +4,449 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#F8F9FA" />
-    <title>Dashboard | Currency Exchange Tracker</title>
+    <title>Currency Exchange Tracker</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/static/css/styles.css" />
   </head>
   <body class="dashboard-body">
-    <div class="dashboard-shell">
-      <aside class="sidebar card">
-        <div class="brand-row compact">
-          <div class="brand-mark">$</div>
-          <div class="brand-copy">
-            <p class="eyebrow">Market monitor</p>
-            <h3>FX Tracker</h3>
-          </div>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <button class="brand-lockup" type="button" data-view="overview">
+          <span class="brand-mark" aria-hidden="true">◎</span>
+          <span>
+            <strong>meridian</strong>
+            <small>PERSONAL FX DESK</small>
+          </span>
+        </button>
+
+        <div class="workspace-label">YOUR WORKSPACE</div>
+
+        <div class="nav-section">
+          <div class="nav-label">OVERVIEW</div>
+          <button class="nav-link active" type="button" data-view="overview" data-testid="link-overview"><span class="nav-icon">▦</span><span>Overview</span></button>
         </div>
 
-        <nav class="sidebar-nav" aria-label="Primary navigation">
-          <button class="nav-pill active" data-panel="overview-panel">Overview</button>
-          <button class="nav-pill" data-panel="convert-panel">Convert</button>
-          <button class="nav-pill" data-panel="trends-panel">Trends</button>
-          <button class="nav-pill" data-panel="portfolio-panel">Portfolio</button>
-          <button class="nav-pill" data-panel="history-panel">History</button>
-          <button class="nav-pill" data-panel="alerts-panel">Alerts</button>
-          <button class="nav-pill" data-panel="settings-panel">Settings</button>
-        </nav>
-
-        <div class="sidebar-section">
-          <div class="section-heading">
-            <p class="label">Favorite pairs</p>
-            <span class="section-count" id="favorite-count">0</span>
-          </div>
-          <div id="favorite-chips" class="favorite-chips">
-            <p class="empty-copy">No saved pairs yet.</p>
-          </div>
+        <div class="nav-section">
+          <div class="nav-label">CONVERT</div>
+          <button class="nav-link" type="button" data-view="convert" data-testid="link-convert"><span class="nav-icon">↔</span><span>Convert</span></button>
         </div>
 
-        <div class="sidebar-footer">
-          <div class="sidebar-status">
-            <span class="status-dot online"></span>
-            <span>Market data ready</span>
+        <div class="nav-section">
+          <div class="nav-label">TRENDS</div>
+          <button class="nav-link" type="button" data-view="trends" data-testid="link-trends"><span class="nav-icon">⌁</span><span>Trends</span></button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">PORTFOLIO</div>
+          <button class="nav-link" type="button" data-view="portfolio" data-testid="link-portfolio"><span class="nav-icon">◫</span><span>Portfolio</span></button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">HISTORY</div>
+          <button class="nav-link" type="button" data-view="history" data-testid="link-history"><span class="nav-icon">◷</span><span>History</span></button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">ALERTS</div>
+          <button class="nav-link" type="button" data-view="alerts" data-testid="link-alerts">
+            <span class="nav-icon">◉</span><span>Alerts</span><i id="nav-alert-count" class="nav-count" hidden>0</i>
+          </button>
+        </div>
+
+        <div class="nav-section">
+          <div class="nav-label">SETTINGS</div>
+          <button class="nav-link" type="button" data-view="settings" data-testid="link-settings"><span class="nav-icon">⚙</span><span>Settings</span></button>
+        </div>
+
+        <div class="sidebar-bottom">
+          <div class="market-note">
+            <span class="live-dot"></span>
+            <div><b>Markets are open</b><small id="sidebar-updated">Checking rates</small></div>
+            <span class="market-note-icon">⌁</span>
           </div>
+          <button class="profile-chip" type="button" data-view="settings" data-testid="button-profile">
+            <span id="sidebar-avatar" class="avatar">U</span>
+            <span><b id="sidebar-user-name">Guest</b><small>Personal account</small></span>
+            <span class="profile-more">…</span>
+          </button>
         </div>
       </aside>
 
-      <main class="main-panel">
-        <header class="topbar card">
-          <div class="topbar-copy">
-            <p class="eyebrow">Live FX dashboard</p>
-            <h1 id="page-title">Overview</h1>
-            <p id="page-subtitle" class="topbar-subtitle">A quick view of your currency activity.</p>
-          </div>
-          <div class="topbar-actions">
-            <button id="theme-toggle" class="icon-btn" type="button" aria-label="Toggle dark mode" title="Toggle theme">◐</button>
-            <div class="user-badge">
-              <span class="user-avatar" aria-hidden="true">U</span>
-              <div>
-                <span class="user-badge-label">Signed in</span>
-                <strong id="user-name">Guest</strong>
-              </div>
-            </div>
+      <main class="main-column">
+        <header class="topbar">
+          <div class="crumb"><span>Workspace</span><span class="slash">/</span><b id="breadcrumb-page">Overview</b></div>
+          <div class="top-actions">
+            <span class="market-open"><i class="live-dot"></i> Live rates</span>
+            <button class="icon-button" id="notification-button" type="button" aria-label="Open alerts">
+              ◉
+              <i id="notification-dot" class="notification-dot" hidden></i>
+            </button>
+            <button class="icon-button theme-button" id="theme-toggle" type="button" aria-label="Toggle theme">◐</button>
           </div>
         </header>
 
-        <!-- Overview -->
-        <section id="overview-panel" class="dashboard-panel active-panel">
-          <div class="summary-grid">
-            <article class="summary-card card">
-              <span class="summary-label">Current rate</span>
-              <strong id="overview-rate">—</strong>
-              <span id="overview-pair" class="summary-meta">USD / ZAR</span>
-            </article>
-            <article class="summary-card card">
-              <span class="summary-label">Portfolio holdings</span>
-              <strong id="overview-portfolio-count">0</strong>
-              <span class="summary-meta">Tracked positions</span>
-            </article>
-            <article class="summary-card card">
-              <span class="summary-label">Active alerts</span>
-              <strong id="overview-alert-count">0</strong>
-              <span class="summary-meta">Thresholds you are watching</span>
-            </article>
-            <article class="summary-card card">
-              <span class="summary-label">Saved pairs</span>
-              <strong id="overview-favorite-count">0</strong>
-              <span class="summary-meta">Quick-access pairs</span>
-            </article>
-          </div>
-
-          <div class="overview-grid">
-            <article class="card overview-hero">
+        <div class="content-area">
+          <!-- Overview -->
+          <section id="view-overview" class="page-view active-view">
+            <div class="page-heading">
               <div>
-                <span class="section-kicker">Quick conversion</span>
-                <h2>Convert currencies without leaving the overview.</h2>
-                <p>Use the dedicated Convert screen for full rate details, pair controls and favorites.</p>
+                <div class="eyebrow" id="overview-date">MARKET DESK</div>
+                <h1 id="overview-greeting">Good morning</h1>
+                <p>A clear view of your money across borders.</p>
               </div>
-              <button class="primary-btn" type="button" data-panel-target="convert-panel">Open converter</button>
-            </article>
-
-            <article class="card overview-list-card">
-              <div class="card-header">
-                <div>
-                  <span class="section-kicker">Recent activity</span>
-                  <h3>Latest conversions</h3>
-                </div>
-                <button class="text-button" type="button" data-panel-target="history-panel">View all</button>
-              </div>
-              <ul id="overview-history-list" class="activity-list"></ul>
-            </article>
-
-            <article class="card overview-list-card">
-              <div class="card-header">
-                <div>
-                  <span class="section-kicker">Portfolio</span>
-                  <h3>Holdings</h3>
-                </div>
-                <button class="text-button" type="button" data-panel-target="portfolio-panel">Manage</button>
-              </div>
-              <ul id="overview-portfolio-list" class="activity-list"></ul>
-            </article>
-
-            <article class="card overview-list-card">
-              <div class="card-header">
-                <div>
-                  <span class="section-kicker">Alerts</span>
-                  <h3>Threshold watch</h3>
-                </div>
-                <button class="text-button" type="button" data-panel-target="alerts-panel">Manage</button>
-              </div>
-              <ul id="overview-alert-list" class="activity-list"></ul>
-            </article>
-          </div>
-        </section>
-
-        <!-- Convert -->
-        <section id="convert-panel" class="dashboard-panel" hidden>
-          <div class="section-intro">
-            <div>
-              <span class="section-kicker">Conversion</span>
-              <h2>Convert currencies</h2>
-              <p>Rates update automatically as you change the amount or currency pair.</p>
+              <button class="button" type="button" data-view="convert">↔ <span>Convert money</span></button>
             </div>
-          </div>
 
-          <section class="card converter">
+            <div class="market-banner panel">
+              <div class="banner-symbol">◎</div>
+              <div class="banner-copy">
+                <b>Global markets at a glance</b>
+                <span>Rates are indicative and refresh throughout the day.</span>
+              </div>
+              <span class="banner-time"><i class="live-dot"></i> <span id="banner-updated">Loading</span></span>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card panel">
+                <div class="stat-label">Portfolio value <span class="info-dot">i</span></div>
+                <div id="overview-portfolio-value" class="stat-value">—</div>
+                <div id="overview-portfolio-foot" class="stat-foot neutral-foot">No holdings yet</div>
+                <div class="stat-watermark">◫</div>
+              </div>
+              <div class="stat-card panel">
+                <div class="stat-label">Favorite pairs</div>
+                <div id="overview-favorites-value" class="stat-value">0</div>
+                <div class="stat-foot neutral-foot">Quick-access watchlist</div>
+                <div class="stat-watermark">☆</div>
+              </div>
+              <div class="stat-card panel">
+                <div class="stat-label">Active alerts</div>
+                <div id="overview-alerts-value" class="stat-value">0</div>
+                <div id="overview-alert-foot" class="stat-foot neutral-foot">Thresholds you are watching</div>
+                <div class="stat-watermark">◉</div>
+              </div>
+            </div>
+
+            <div class="section-header">
+              <div>
+                <div class="eyebrow">YOUR WATCHLIST</div>
+                <h2>Favorite pairs</h2>
+              </div>
+              <button class="text-link" type="button" data-view="trends">View trends →</button>
+            </div>
+            <div id="overview-pairs" class="pairs-grid"></div>
+
+            <div class="dashboard-lower">
+              <section>
+                <div class="section-header compact">
+                  <div><div class="eyebrow">PORTFOLIO</div><h2>Holdings</h2></div>
+                  <button class="text-link" type="button" data-view="portfolio">View all →</button>
+                </div>
+                <div id="overview-holdings" class="panel holdings-preview"></div>
+              </section>
+              <section>
+                <div class="section-header compact">
+                  <div><div class="eyebrow">LATEST ACTIVITY</div><h2>Recent conversions</h2></div>
+                  <button class="text-link" type="button" data-view="history">View all →</button>
+                </div>
+                <div id="overview-history" class="panel activity-preview"></div>
+              </section>
+            </div>
+          </section>
+
+          <!-- Convert -->
+          <section id="view-convert" class="page-view" hidden>
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">EXCHANGE DESK</div>
+                <h1>Convert currency</h1>
+                <p>Know exactly what you'll receive before you exchange.</p>
+              </div>
+            </div>
+
             <div class="convert-layout">
-              <div class="field-block amount-field">
-                <label for="amount-input">Amount</label>
-                <input id="amount-input" type="number" min="0" step="0.01" value="1000" inputmode="decimal" maxlength="12" />
-              </div>
-
-              <div class="currency-field currency-picker">
-                <label for="base-currency">From</label>
-                <input class="currency-search" data-target-select="base-currency" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="base-currency" aria-label="Source currency"></select>
-              </div>
-
-              <div class="pair-actions">
-                <button id="swap-currency" class="icon-btn swap-action" type="button" aria-label="Swap currencies" title="Swap currencies">⇄</button>
-                <button id="favorite-toggle" class="icon-btn favorite-action" type="button" aria-label="Add pair to favorites" title="Add pair to favorites">☆</button>
-              </div>
-
-              <div class="currency-field currency-picker">
-                <label for="target-currency">To</label>
-                <input class="currency-search" data-target-select="target-currency" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="target-currency" aria-label="Target currency"></select>
-              </div>
-            </div>
-
-            <div class="rate-strip">
-              <div>
-                <span class="result-label">Current rate</span>
-                <strong id="rate-badge">1 USD = 18.20 ZAR</strong>
-              </div>
-              <div class="rate-status">
-                <span class="status-dot online"></span>
-                <div>
-                  <span id="rate-source">Live</span>
-                  <small id="rate-updated">Updating automatically</small>
+              <form id="convert-form" class="panel convert-card">
+                <div class="convert-title">
+                  <span class="convert-icon">↔</span>
+                  <div><b>New conversion</b><small>Preview first · record when you review</small></div>
+                  <span class="verified">✓ Secure</span>
                 </div>
-              </div>
-            </div>
 
-            <div class="conversion-result">
-              <div>
-                <span class="result-label">Converted amount</span>
-                <h2 id="converted-output">18,200.00 ZAR</h2>
-                <p id="conversion-note" class="result-note">Based on the latest available rate.</p>
-              </div>
-            </div>
-          </section>
-
-          <section class="card favorite-pairs-card">
-            <div class="card-header">
-              <div>
-                <span class="section-kicker">Quick access</span>
-                <h3>Favorite pairs</h3>
-              </div>
-              <button class="text-button" type="button" data-panel-target="trends-panel">View trends</button>
-            </div>
-            <div id="convert-favorite-chips" class="favorite-chips"></div>
-          </section>
-        </section>
-
-        <!-- Trends -->
-        <section id="trends-panel" class="dashboard-panel" hidden>
-          <div class="section-intro">
-            <div>
-              <span class="section-kicker">Market analysis</span>
-              <h2>Currency trends</h2>
-              <p>Inspect stored rate history and compare it against an active alert threshold.</p>
-            </div>
-          </div>
-
-          <section class="card trend-controls">
-            <div class="trend-picker-grid">
-              <div class="currency-field currency-picker">
-                <label for="trend-base">From</label>
-                <input class="currency-search" data-target-select="trend-base" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="trend-base" aria-label="Trend base currency"></select>
-              </div>
-              <div class="currency-field currency-picker">
-                <label for="trend-quote">To</label>
-                <input class="currency-search" data-target-select="trend-quote" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="trend-quote" aria-label="Trend quote currency"></select>
-              </div>
-              <div class="trend-range" role="group" aria-label="Trend range">
-                <button class="range-btn" type="button" data-days="1">24H</button>
-                <button class="range-btn active" type="button" data-days="7">7D</button>
-                <button class="range-btn" type="button" data-days="30">30D</button>
-              </div>
-            </div>
-
-            <div class="trend-stats">
-              <div>
-                <span class="summary-label">Current</span>
-                <strong id="trend-current-rate">—</strong>
-              </div>
-              <div>
-                <span class="summary-label">Low</span>
-                <strong id="trend-low-rate">—</strong>
-              </div>
-              <div>
-                <span class="summary-label">High</span>
-                <strong id="trend-high-rate">—</strong>
-              </div>
-              <div>
-                <span class="summary-label">Threshold</span>
-                <strong id="trend-threshold">None</strong>
-              </div>
-            </div>
-          </section>
-
-          <section class="card trend-card">
-            <div class="card-header">
-              <div>
-                <span class="section-kicker">Stored market data</span>
-                <h3 id="trend-title">USD / ZAR</h3>
-              </div>
-              <span id="trend-state" class="status-badge neutral">No threshold</span>
-            </div>
-            <div id="trend-chart" class="trend-chart" aria-label="Currency rate trend chart"></div>
-            <div id="trend-message" class="trend-message" aria-live="polite"></div>
-          </section>
-        </section>
-
-        <!-- Portfolio -->
-        <section id="portfolio-panel" class="dashboard-panel" hidden>
-          <div class="section-intro section-intro-row">
-            <div>
-              <span class="section-kicker">Holdings</span>
-              <h2>Portfolio</h2>
-              <p>Track the currencies you currently hold and keep notes beside each position.</p>
-            </div>
-            <button id="open-portfolio-modal" class="primary-btn" type="button">Add holding</button>
-          </div>
-
-          <section class="summary-grid portfolio-summary">
-            <article class="summary-card card">
-              <span class="summary-label">Holdings</span>
-              <strong id="portfolio-count">0</strong>
-              <span class="summary-meta">Positions tracked</span>
-            </article>
-            <article class="summary-card card">
-              <span class="summary-label">Base view</span>
-              <strong id="portfolio-base-view">USD</strong>
-              <span class="summary-meta">Reference display currency</span>
-            </article>
-          </section>
-
-          <section class="card table-card">
-            <div class="card-header">
-              <div>
-                <span class="section-kicker">Positions</span>
-                <h3>Your holdings</h3>
-              </div>
-            </div>
-            <div id="portfolio-list" class="record-list"></div>
-          </section>
-
-          <div id="portfolio-modal" class="modal" hidden>
-            <div class="modal-backdrop" data-close-modal="portfolio-modal"></div>
-            <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="portfolio-modal-title">
-              <div class="modal-header">
-                <div>
-                  <span class="section-kicker">New position</span>
-                  <h3 id="portfolio-modal-title">Add holding</h3>
+                <label class="field-label" for="amount-input">You send</label>
+                <div class="currency-field">
+                  <input id="amount-input" data-testid="input-convert-amount" type="number" min="0" step="0.01" value="1000" />
+                  <select id="base-currency" aria-label="Source currency" data-testid="select-source-currency"></select>
                 </div>
-                <button class="icon-btn" type="button" data-close-modal="portfolio-modal" aria-label="Close">×</button>
-              </div>
-              <form id="portfolio-form" class="form-stack">
-                <div class="field-block">
-                  <label for="portfolio-currency">Currency</label>
-                  <input id="portfolio-currency" maxlength="3" placeholder="USD" required />
+
+                <button id="swap-currency" class="swap-button" type="button" aria-label="Swap currencies">↕</button>
+
+                <label class="field-label" for="target-currency">Recipient gets</label>
+                <div class="currency-field recipient-field">
+                  <div id="converted-output" class="recipient-value tabular">—</div>
+                  <select id="target-currency" aria-label="Target currency" data-testid="select-target-currency"></select>
                 </div>
-                <div class="field-block">
-                  <label for="portfolio-amount">Amount held</label>
-                  <input id="portfolio-amount" type="number" step="0.01" min="0" required />
+
+                <div class="rate-note">
+                  <span>Exchange rate</span>
+                  <b id="rate-badge" class="tabular">1 USD = — ZAR</b>
+                  <span class="live-mini"><i class="live-dot"></i> <span id="rate-source">Checking</span></span>
                 </div>
-                <div class="field-block">
-                  <label for="portfolio-notes">Notes</label>
-                  <input id="portfolio-notes" placeholder="Optional note" />
+
+                <div class="fee-box">
+                  <div><span>Data source</span><b id="convert-source">—</b></div>
+                  <div><span>History</span><b>Recorded on review</b></div>
+                  <div class="fee-total"><span>Total to record</span><b id="convert-total">—</b></div>
                 </div>
-                <div class="modal-actions">
-                  <button class="secondary-btn" type="button" data-close-modal="portfolio-modal">Cancel</button>
-                  <button type="submit" class="primary-btn">Save holding</button>
-                </div>
+
+                <button class="button convert-submit" type="submit">↔ Review conversion</button>
+                <div id="conversion-success" class="success-message" hidden>✓ Conversion recorded in your activity.</div>
+                <p class="secure-note">▣ Your exchange details are handled by your account session.</p>
               </form>
-            </div>
-          </div>
-        </section>
 
-        <!-- History -->
-        <section id="history-panel" class="dashboard-panel" hidden>
-          <div class="section-intro section-intro-row">
-            <div>
-              <span class="section-kicker">Activity</span>
-              <h2>Conversion history</h2>
-              <p>Review the conversions stored against your authenticated account.</p>
+              <aside class="convert-aside">
+                <div class="aside-art">
+                  <div class="orbit orbit-one"></div>
+                  <div class="orbit orbit-two"></div>
+                  <div class="art-coin coin-usd">$</div>
+                  <div class="art-coin coin-eur">€</div>
+                  <div class="art-coin coin-gbp">£</div>
+                  <div class="art-center">◎</div>
+                </div>
+                <div class="aside-caption">
+                  <div class="eyebrow">A BETTER WAY TO MOVE MONEY</div>
+                  <h2>Clarity in every conversion.</h2>
+                  <p>Transparent rates, simple inputs, and a complete record of every exchange you make.</p>
+                </div>
+                <div class="aside-facts">
+                  <div><b>LIVE</b><small>rate visibility</small></div>
+                  <div><b>SAFE</b><small>account history</small></div>
+                  <div><b>FAST</b><small>automatic preview</small></div>
+                </div>
+              </aside>
             </div>
-            <button class="secondary-btn" type="button" id="refresh-history">Refresh</button>
-          </div>
-
-          <section class="card table-card">
-            <div class="history-toolbar">
-              <label class="search-control" for="history-search">
-                <span class="visually-hidden">Search conversion history</span>
-                <input id="history-search" type="search" placeholder="Search by currency..." autocomplete="off" />
-              </label>
-              <span id="history-count" class="table-caption">0 records</span>
-            </div>
-            <div id="history-list" class="record-list"></div>
           </section>
-        </section>
 
-        <!-- Alerts -->
-        <section id="alerts-panel" class="dashboard-panel" hidden>
-          <div class="section-intro">
-            <div>
-              <span class="section-kicker">Monitoring</span>
-              <h2>Rate alerts</h2>
-              <p>Create thresholds to monitor a currency pair. Notification delivery is not automated yet.</p>
-            </div>
-          </div>
-
-          <section class="card alert-builder">
-            <div class="card-header">
+          <!-- Trends -->
+          <section id="view-trends" class="page-view" hidden>
+            <div class="page-heading">
               <div>
-                <span class="section-kicker">New threshold</span>
-                <h3>Create alert</h3>
+                <div class="eyebrow">MARKET INTELLIGENCE</div>
+                <h1>Currency trends</h1>
+                <p>Follow the moves that matter to you.</p>
               </div>
             </div>
-            <form id="alert-form" class="form-grid">
-              <div class="currency-field currency-picker">
-                <label for="alert-base">From</label>
-                <input class="currency-search" data-target-select="alert-base" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="alert-base" aria-label="Alert base currency"></select>
+
+            <div class="trend-toolbar panel">
+              <div class="pair-select-wrap">
+                <label for="trend-pair">SELECT PAIR</label>
+                <select id="trend-pair"></select>
               </div>
-              <div class="currency-field currency-picker">
-                <label for="alert-quote">To</label>
-                <input class="currency-search" data-target-select="alert-quote" type="search" placeholder="Search currency..." autocomplete="off" />
-                <select id="alert-quote" aria-label="Alert quote currency"></select>
+              <div id="trend-range" class="range-switch">
+                <button type="button" data-days="7">1W</button>
+                <button type="button" data-days="30" class="chosen">1M</button>
+                <button type="button" data-days="90">3M</button>
+                <button type="button" data-days="365">1Y</button>
+                <button type="button" data-days="3650">ALL</button>
               </div>
-              <div class="field-block">
-                <label for="alert-direction">Direction</label>
-                <select id="alert-direction">
-                  <option value="above">Rises above</option>
-                  <option value="below">Falls below</option>
+            </div>
+
+            <div class="trend-metrics">
+              <div><small>Current rate</small><b id="trend-current" class="tabular">—</b></div>
+              <div><small>Change</small><b id="trend-change">—</b></div>
+              <div><small>Period high</small><b id="trend-high" class="tabular">—</b></div>
+              <div><small>Period low</small><b id="trend-low" class="tabular">—</b></div>
+            </div>
+
+            <div class="panel chart-panel">
+              <div class="panel-title"><h3 id="trend-chart-title">USD/ZAR performance</h3><span class="chart-updated"><i class="live-dot"></i> <span id="trend-status">Waiting for data</span></span></div>
+              <div id="trend-chart" class="chart-wrap" aria-label="Currency trend chart"></div>
+              <div class="trend-bottom">
+                <div id="trend-threshold-message" class="alert-tip compact-tip">No active threshold for this pair.</div>
+                <div class="chart-legend"><span><i class="legend-dot neutral"></i> Rate</span><span><i class="legend-dot threshold"></i> Threshold</span></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- Portfolio -->
+          <section id="view-portfolio" class="page-view" hidden>
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">YOUR MONEY</div>
+                <h1>Portfolio</h1>
+                <p>Track the currencies you currently hold.</p>
+              </div>
+              <button id="open-holding-modal" class="button" type="button">+ Add holding</button>
+            </div>
+
+            <div class="portfolio-overview">
+              <div class="panel total-card">
+                <div class="eyebrow">TOTAL PORTFOLIO VALUE</div>
+                <div id="portfolio-total" class="portfolio-total tabular">—</div>
+                <div class="total-note">Reference currency: <b id="portfolio-base">USD</b></div>
+              </div>
+              <div class="panel allocation-card">
+                <div class="panel-title"><h3>Allocation</h3><span id="allocation-caption">By currency</span></div>
+                <div id="allocation-content" class="allocation-content"></div>
+              </div>
+            </div>
+
+            <div class="section-header">
+              <div><div class="eyebrow">YOUR POSITIONS</div><h2>Holdings <span id="portfolio-count" class="count-pill">0</span></h2></div>
+            </div>
+            <div class="panel portfolio-table">
+              <div class="table-head"><span>Currency</span><span>Amount</span><span>Value</span><span>Notes</span><span></span></div>
+              <div id="portfolio-list"></div>
+            </div>
+          </section>
+
+          <!-- History -->
+          <section id="view-history" class="page-view" hidden>
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">YOUR ACTIVITY</div>
+                <h1>Conversion history</h1>
+                <p>Review the conversions recorded on your account.</p>
+              </div>
+              <button id="refresh-history" class="button button-secondary" type="button">↻ Refresh</button>
+            </div>
+
+            <div class="panel history-table">
+              <div class="history-toolbar">
+                <div class="search-wrap"><span>⌕</span><input id="history-search" type="search" placeholder="Search currencies..." /></div>
+                <select id="history-filter">
+                  <option>All activity</option>
+                  <option>USD</option>
+                  <option>EUR</option>
+                  <option>GBP</option>
+                  <option>ZAR</option>
+                  <option>JPY</option>
                 </select>
+                <span id="history-count" class="record-count">0 records</span>
               </div>
-              <div class="field-block">
-                <label for="alert-target">Target rate</label>
-                <input id="alert-target" type="number" step="0.0001" min="0" required />
-              </div>
-              <div class="form-actions">
-                <button type="submit" class="primary-btn">Add alert</button>
-              </div>
-            </form>
+              <div class="table-head history-head"><span>Date</span><span>Pair</span><span>Sent</span><span>Received</span><span>Rate</span></div>
+              <div id="history-list"></div>
+              <div class="history-foot">▣ Your conversion history is stored against your account.</div>
+            </div>
           </section>
 
-          <section class="card table-card">
-            <div class="card-header">
+          <!-- Alerts -->
+          <section id="view-alerts" class="page-view" hidden>
+            <div class="page-heading">
               <div>
-                <span class="section-kicker">Saved thresholds</span>
-                <h3>Alert rules</h3>
+                <div class="eyebrow">STAY AHEAD</div>
+                <h1>Rate alerts</h1>
+                <p>Create a threshold and keep an eye on the pair you care about.</p>
               </div>
+              <button id="open-alert-modal" class="button" type="button">+ Create alert</button>
             </div>
-            <div id="alerts-list" class="record-list"></div>
+
+            <div class="alert-summary panel">
+              <span class="alert-summary-icon">◉</span>
+              <div><b><span id="alert-summary-count">0</span> active alerts</b><small>Thresholds are saved to your account. Automated notification delivery is not implemented yet.</small></div>
+              <span id="alert-summary-state" class="toggle-label">Monitoring</span>
+            </div>
+
+            <div class="section-header">
+              <div><div class="eyebrow">YOUR MONITOR</div><h2>Active alerts <span id="alerts-count" class="count-pill">0</span></h2></div>
+            </div>
+            <div id="alerts-list" class="alert-list"></div>
+
+            <div class="alert-tip">
+              <span>?</span>
+              <div><b>How rate alerts work</b><p>Alerts define a target level for a currency pair. The Trends screen displays the active threshold when matching stored rate history is available.</p></div>
+            </div>
           </section>
-        </section>
 
-        <!-- Settings -->
-        <section id="settings-panel" class="dashboard-panel" hidden>
-          <div class="section-intro">
-            <div>
-              <span class="section-kicker">Preferences</span>
-              <h2>Settings & profile</h2>
-              <p>Manage your local dashboard preferences and session.</p>
+          <!-- Settings -->
+          <section id="view-settings" class="page-view" hidden>
+            <div class="page-heading">
+              <div>
+                <div class="eyebrow">MAKE IT YOURS</div>
+                <h1>Settings</h1>
+                <p>A workspace that works the way you do.</p>
+              </div>
             </div>
-          </div>
 
-          <div class="settings-grid">
-            <section class="card settings-card">
-              <span class="section-kicker">Profile</span>
-              <h3 id="settings-name">Guest</h3>
-              <p id="settings-email" class="settings-value">Not signed in</p>
-            </section>
+            <div class="settings-layout">
+              <nav class="panel settings-nav">
+                <div class="settings-nav-title">PREFERENCES</div>
+                <a class="settings-nav-link active" href="#regional">Regional settings</a>
+                <a class="settings-nav-link" href="#appearance">Appearance</a>
+                <a class="settings-nav-link" href="#session">Session</a>
+                <div class="settings-help">? <span>Need a hand?<small>Use the information on this page to manage your workspace.</small></span></div>
+              </nav>
 
-            <section class="card settings-card">
-              <div class="settings-row">
-                <div>
-                  <span class="section-kicker">Theme</span>
-                  <h3>Dashboard appearance</h3>
-                  <p>Switch between the light and dark visual system.</p>
-                </div>
-                <button id="settings-theme-toggle" class="secondary-btn" type="button">Toggle theme</button>
+              <div class="settings-content">
+                <section class="panel settings-section" id="regional">
+                  <div class="settings-section-head"><span class="settings-icon">◎</span><div><h3>Regional settings</h3><p>Your account identity and default display currency.</p></div></div>
+                  <div class="settings-field"><span><b>Base currency</b><small>Used when showing your portfolio total.</small></span><select id="settings-base-currency"></select></div>
+                  <div class="settings-field"><span><b>Account</b><small id="settings-account-email">Not signed in</small></span><span class="settings-value" id="settings-account-name">Guest</span></div>
+                </section>
+
+                <section class="panel settings-section" id="appearance">
+                  <div class="settings-section-head"><span class="settings-icon">◐</span><div><h3>Appearance</h3><p>Make the dashboard comfortable in any light.</p></div></div>
+                  <div class="settings-field">
+                    <span><b>Theme</b><small>Choose your preferred workspace appearance.</small></span>
+                    <div class="theme-options"><button id="theme-light" type="button">☼ Light</button><button id="theme-dark" type="button">☾ Dark</button></div>
+                  </div>
+                </section>
+
+                <section class="panel settings-section" id="session">
+                  <div class="settings-section-head"><span class="settings-icon">↪</span><div><h3>Session</h3><p>Clear the current browser session and return to login.</p></div></div>
+                  <div class="settings-field"><span><b>Sign out</b><small>Access and refresh tokens will be removed from this browser.</small></span><button id="logout-button" class="button danger-button" type="button">Log out</button></div>
+                </section>
               </div>
-            </section>
-
-            <section class="card settings-card">
-              <div class="settings-row">
-                <div>
-                  <span class="section-kicker">Session</span>
-                  <h3>Sign out</h3>
-                  <p>Clear the local access and refresh tokens for this browser.</p>
-                </div>
-                <button id="logout-button" class="danger-btn" type="button">Log out</button>
-              </div>
-            </section>
-          </div>
-        </section>
+            </div>
+          </section>
+        </div>
       </main>
-    </div>
 
+      <nav class="mobile-tabs" aria-label="Mobile navigation">
+        <button type="button" class="mobile-tab selected" data-view="overview"><span>▦</span><small>Overview</small></button>
+        <button type="button" class="mobile-tab" data-view="convert"><span>↔</span><small>Convert</small></button>
+        <button type="button" class="mobile-tab" data-view="trends"><span>⌁</span><small>Trends</small></button>
+        <button type="button" class="mobile-tab" data-view="portfolio"><span>◫</span><small>Portfolio</small></button>
+        <button type="button" class="mobile-tab" id="mobile-more-button"><span>…</span><small>More</small></button>
+      </nav>
+
+      <div id="more-drawer" class="drawer-backdrop" hidden>
+        <div class="more-drawer" role="dialog" aria-modal="true" aria-label="More navigation">
+          <div class="drawer-head"><b>More</b><button id="close-more" class="icon-button" type="button" aria-label="Close">×</button></div>
+          <button class="drawer-link" type="button" data-view="history">◷ History</button>
+          <button class="drawer-link" type="button" data-view="alerts">◉ Alerts</button>
+          <button class="drawer-link" type="button" data-view="settings">⚙ Settings</button>
+        </div>
+      </div>
+
+      <div id="holding-modal" class="modal-backdrop" hidden>
+        <div class="modal panel" role="dialog" aria-modal="true" aria-labelledby="holding-modal-title">
+          <div class="modal-head"><div><div class="eyebrow">MERIDIAN WORKSPACE</div><h2 id="holding-modal-title">Add a holding</h2></div><button class="icon-button close-modal" data-modal="holding-modal" type="button" aria-label="Close">×</button></div>
+          <form id="holding-form" class="modal-form">
+            <label>Currency<select id="holding-currency"></select></label>
+            <label>Amount held<input id="holding-amount" type="number" min="0.01" step="0.01" required placeholder="0.00" /></label>
+            <label>Account label<input id="holding-label" type="text" maxlength="100" placeholder="e.g. Travel fund" /></label>
+            <div class="modal-actions"><button class="button button-secondary close-modal" data-modal="holding-modal" type="button">Cancel</button><button class="button" type="submit">✓ Save holding</button></div>
+          </form>
+        </div>
+      </div>
+
+      <div id="alert-modal" class="modal-backdrop" hidden>
+        <div class="modal panel" role="dialog" aria-modal="true" aria-labelledby="alert-modal-title">
+          <div class="modal-head"><div><div class="eyebrow">MERIDIAN WORKSPACE</div><h2 id="alert-modal-title">Create rate alert</h2></div><button class="icon-button close-modal" data-modal="alert-modal" type="button" aria-label="Close">×</button></div>
+          <form id="alert-create-form" class="modal-form">
+            <label>Currency pair<select id="alert-pair"></select></label>
+            <div class="form-two">
+              <label>Alert when rate goes<select id="alert-direction"><option value="above">Above</option><option value="below">Below</option></select></label>
+              <label>Target rate<input id="alert-target" type="number" min="0.0001" step="0.0001" required placeholder="18.5000" /></label>
+            </div>
+            <div class="alert-preview">◉ <span>Notify me when <b id="alert-preview-pair">USD/ZAR</b> goes <b id="alert-preview-direction">above</b> <b id="alert-preview-target">—</b></span></div>
+            <div class="modal-actions"><button class="button button-secondary close-modal" data-modal="alert-modal" type="button">Cancel</button><button class="button" type="submit">+ Create alert</button></div>
+          </form>
+        </div>
+      </div>
+    </div>
     <script src="/static/js/main.js"></script>
   </body>
 </html>
