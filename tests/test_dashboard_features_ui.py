@@ -24,14 +24,14 @@ def test_favorite_pair_can_be_added_and_removed(authenticated_session, base_url)
     dashboard.wait_for_favorite_count(1)
 
     # The saved favorite is now shown in the user's personal watchlist.
-    assert any(pair in item for item in dashboard.get_favorite_card_texts())
+    assert pair in dashboard.get_favorite_pairs()
     assert dashboard.get_favorite_star_text(pair) == "★"
 
     # Refresh to prove the favorite is persisted by the backend, not only cached in JS.
     dashboard.driver.refresh()
     dashboard.go_to_overview()
     dashboard.wait_for_favorite_count(1)
-    assert any(pair in item for item in dashboard.get_favorite_card_texts())
+    assert pair in dashboard.get_favorite_pairs()
     assert dashboard.get_favorite_star_text(pair) == "★"
 
     # Clicking the filled star removes only that user's saved favorite.
