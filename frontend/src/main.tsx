@@ -184,7 +184,7 @@ function TrendWidget() {
               labelFormatter={(value) =>
                 new Date(value as string).toLocaleString()
               }
-              formatter={(value: number) => [
+              formatter={(value) => [
                 Number(value).toFixed(5),
                 payload.pair,
               ]}
@@ -213,7 +213,14 @@ function TrendWidget() {
               strokeWidth={2.5}
               fill="url(#fxTrendFill)"
               activeDot={{ r: 5, strokeWidth: 2 }}
-              dot={(props) => <TrendDot {...props} threshold={payload.threshold} />}
+              dot={(props) => (
+                <TrendDot
+                  cx={props.cx}
+                  cy={props.cy}
+                  payload={props.payload as TrendPoint | undefined}
+                  threshold={payload.threshold}
+                />
+              )}
               isAnimationActive={false}
             />
           </AreaChart>
