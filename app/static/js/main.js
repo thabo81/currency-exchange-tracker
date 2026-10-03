@@ -303,7 +303,7 @@ function initTheme() {
 
 /* ---------- Dashboard identity/navigation ---------- */
 
-let currentView = "overview";
+let currentView = null;
 let cachedHistory = [];
 let cachedHoldings = [];
 let cachedAlerts = [];
@@ -379,6 +379,12 @@ function initNavigation() {
 
 function showView(view) {
   if (!PAGE_META[view]) view = "overview";
+
+  // Do not reload the currently visible view when a test or user clicks
+  // its active navigation item again. This prevents competing async renders
+  // from replacing DOM nodes while a star is being clicked.
+  if (currentView === view) return;
+
   updateNavigation(view);
   history.replaceState(null, "", `#${view}`);
 }
