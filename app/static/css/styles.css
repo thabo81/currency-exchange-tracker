@@ -830,6 +830,43 @@ select:focus {
   font-size: 10px;
 }
 
+.favorite-candidates-section {
+  margin-top: -12px;
+  margin-bottom: 30px;
+}
+
+.favorite-helper {
+  color: var(--muted-ink);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.favorite-candidates-section .pairs-grid {
+  margin-bottom: 0;
+}
+
+.favorite-empty-content {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  grid-column: 1 / -1;
+  min-height: 125px;
+  padding: 18px;
+}
+
+.favorite-empty-content b {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.favorite-empty-content span {
+  max-width: 320px;
+  color: var(--muted-ink);
+  font-size: 9px;
+  line-height: 1.5;
+  text-align: center;
+}
+
 .dashboard-lower {
   display: grid;
   grid-template-columns: 1fr 1fr;
