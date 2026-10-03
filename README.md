@@ -1,6 +1,6 @@
 # Currency Exchange Tracker
 
-A full-stack currency conversion web application built with **Python, FastAPI, SQLAlchemy, Jinja2, and vanilla JavaScript**. It supports currency conversion using live exchange-rate data when available, a cached-rate fallback, and account-based features such as favourites, portfolio holdings, conversion history, rate trends, and target-rate alerts.
+A full-stack currency conversion web application built with **Python, FastAPI, SQLAlchemy, Jinja2, HTML/CSS/JavaScript, and a React/Recharts trend widget**. It supports currency conversion using live exchange-rate data when available, a cached-rate fallback, and account-based features such as favourites, portfolio holdings, conversion history, rate trends, and target-rate alerts.
 
 [![Automated Tests](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml)
 
@@ -53,7 +53,7 @@ A full-stack currency conversion web application built with **Python, FastAPI, S
 | Backend and HTTP API | FastAPI, Uvicorn |
 | Database access | SQLAlchemy |
 | Database options | SQLite for local/CI use; PostgreSQL can be configured |
-| Frontend | Jinja2 templates, HTML, CSS, vanilla JavaScript |
+| Frontend | Jinja2 templates, HTML, CSS, JavaScript, React, Recharts, Lucide React |
 | Browser automation | Selenium WebDriver |
 | Test framework | Pytest |
 | API test utilities | FastAPI TestClient, HTTPX |
@@ -65,6 +65,11 @@ A full-stack currency conversion web application built with **Python, FastAPI, S
 
 ```text
 currency-exchange-tracker/
+├── frontend/
+│   ├── package.json            # React/Recharts/Lucide widget dependencies
+│   ├── tsconfig.json           # TypeScript settings for the widget
+│   ├── vite.config.ts          # Builds the widget into app/static/
+│   └── src/main.tsx            # Recharts trend widget entry point
 ├── app/
 │   ├── main.py                 # FastAPI application and core routes
 │   ├── auth.py                 # Authentication utilities
@@ -103,6 +108,7 @@ currency-exchange-tracker/
 - Python 3.12 or a compatible Python version.
 - Google Chrome for Selenium browser tests.
 - Git.
+- Node.js 20+ and npm for the React/Recharts trend widget.
 
 ### 1. Clone the repository
 
@@ -133,6 +139,31 @@ source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
+
+### 4. Build the dashboard trend widget
+
+The dashboard Trend screen uses **Recharts** for the actual chart and **Lucide React** for chart/status icons. The widget is compiled into `app/static/trend-widget` and loaded by the FastAPI dashboard template.
+
+From the repository root:
+
+```bash
+cd frontend
+npm install recharts lucide-react
+npm install
+npm run typecheck
+npm run build
+cd ..
+```
+
+The explicit `npm install recharts lucide-react` command installs the requested chart and icon packages; the following `npm install` installs the remaining React/Vite build dependencies declared in `frontend/package.json`.
+
+After the build completes, start FastAPI normally:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The generated bundle is required for the Trends chart to render locally. CI builds it automatically before running the Python/Selenium test suite.
 
 ### 4. Configure environment variables
 
