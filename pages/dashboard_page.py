@@ -129,6 +129,14 @@ class DashboardPage(BasePage):
     def get_favorite_card_texts(self):
         return [element.text for element in self.driver.find_elements(*self.FAVORITE_CARDS)]
 
+    def get_favorite_pairs(self):
+        # Read the canonical pair identifier from the DOM rather than relying on
+        # visual text spacing such as "USD / ZAR".
+        return [
+            element.get_attribute("data-favorite-pair")
+            for element in self.driver.find_elements(*self.FAVORITE_CARDS)
+        ]
+
     def wait_for_favorite_count(self, count: int, timeout: int = 5):
         WebDriverWait(self.driver, timeout).until(
             lambda driver: len(driver.find_elements(*self.FAVORITE_CARDS)) == count
