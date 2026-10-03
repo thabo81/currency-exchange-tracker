@@ -2559,3 +2559,157 @@ select:focus {
     scroll-behavior: auto !important;
   }
 }
+
+
+/* ---------- Recharts trend widget ---------- */
+
+.trend-widget-shell {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+  display: flex;
+  flex-direction: column;
+}
+
+.trend-widget-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 3px 13px;
+}
+
+.trend-widget-current {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trend-widget-current > span {
+  color: var(--muted-ink);
+  font-size: 9px;
+}
+
+.trend-widget-current > strong {
+  color: var(--ink);
+  font: 600 15px var(--app-font-mono);
+}
+
+.trend-widget-current > small {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 700;
+}
+
+.trend-widget-state {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.trend-widget-state > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  font-size: 8px;
+  font-weight: 700;
+}
+
+.state-positive {
+  color: var(--good);
+  background: rgba(0, 184, 148, .10);
+}
+
+.state-negative {
+  color: var(--error);
+  background: rgba(214, 48, 49, .09);
+}
+
+.state-neutral {
+  color: var(--brand);
+  background: var(--soft);
+}
+
+.recharts-container {
+  width: 100%;
+  height: 290px;
+}
+
+.trend-widget-legend {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 8px;
+  color: var(--muted-ink);
+  font-size: 8px;
+}
+
+.trend-widget-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.legend-swatch {
+  width: 7px;
+  height: 7px;
+  display: inline-block;
+  border-radius: 50%;
+}
+
+.legend-swatch.rate {
+  background: var(--brand);
+}
+
+.legend-swatch.threshold {
+  background: var(--warning);
+}
+
+.legend-swatch.breach {
+  background: var(--error);
+}
+
+.trend-widget-empty {
+  min-height: 300px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  padding: 20px;
+  color: var(--muted-ink);
+  text-align: center;
+}
+
+.trend-widget-empty b {
+  color: var(--ink);
+  font-size: 11px;
+}
+
+.trend-widget-empty span {
+  max-width: 300px;
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .trend-widget-shell {
+    min-height: 220px;
+  }
+
+  .recharts-container {
+    height: 205px;
+  }
+
+  .trend-widget-summary {
+    flex-direction: column;
+  }
+
+  .trend-widget-state {
+    justify-content: flex-start;
+  }
+}
