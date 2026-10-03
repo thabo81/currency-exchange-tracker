@@ -75,22 +75,39 @@ function TrendWidget() {
   }, []);
 
   const rates = payload.points.map((point) => Number(point.rate));
-  const current = rates.at(-1) ?? null;
+  // Get the latest rate in the array.
+  // Using the array index keeps this compatible with the project's ES2020 target.
+  const current = rates.length > 0 ? rates[rates.length - 1] : null;
   const first = rates[0] ?? null;
   const change = first && current != null && first !== 0
     ? ((current - first) / first) * 100
     : null;
 
-  const domain = useMemo(() => {
-    if (!rates.length) return ["auto", "auto"] as const;
+  // Calculate the Y-axis range dynamically so the chart has some visual padding.
+  const domain = useMemo<[number | "auto", number | "auto"]>(() => {
+    // When there is no data, allow Recharts to determine the axis automatically.
+    if (!rates.length) {
+      return ["auto", "auto"];
+    }
 
-    const values = payload.threshold == null ? rates : [...rates, payload.threshold];
+    // Include the threshold when one exists so the threshold line
+    // remains visible inside the chart's Y-axis range.
+    const values =
+      payload.threshold == null
+        ? rates
+        : [...rates, payload.threshold];
+
     const min = Math.min(...values);
     const max = Math.max(...values);
-    const padding = Math.max((max - min) * 0.08, max === min ? 0.01 : 0.001);
 
-    return [min - padding, max + padding] as [number, number];
-  }, [payload.points, payload.threshold]);
+    // Add a small amount of padding around the lowest and highest values.
+    const padding = Math.max(
+      (max - min) * 0.08,
+      max === min ? 0.01 : 0.001
+    );
+
+    return [min - padding, max + padding];
+  }, [rates, payload.threshold]);
 
   if (!payload.points.length) {
     return (
