@@ -19,6 +19,8 @@ class DashboardPage(BasePage):
 
     FAVORITE_STARS = (By.CSS_SELECTOR, "#overview-pairs .star-button")
     FAVORITE_CARDS = (By.CSS_SELECTOR, "#overview-pairs .pair-card")
+    FAVORITE_EMPTY = (By.ID, "overview-favorites-empty")
+    FAVORITE_CANDIDATE_STARS = (By.CSS_SELECTOR, "#favorite-candidates .star-button")
 
     PORTFOLIO_PANEL = (By.ID, "view-portfolio")
     PORTFOLIO_OPEN = (By.ID, "open-holding-modal")
@@ -86,14 +88,51 @@ class DashboardPage(BasePage):
     def go_to_trends(self):
         self.go_to_view("trends")
 
+    def is_favorites_empty(self):
+        return bool(self.driver.find_elements(*self.FAVORITE_EMPTY))
+
     def toggle_first_favorite(self):
-        self.driver.find_elements(*self.FAVORITE_STARS)[0].click()
+        WebDriverWait(self.driver, 5).until(
+            lambda driver: driver.find_elements(*self.FAVORITE_STARS)
+        )[0].click()
+
+    def toggle_candidate_favorite(self, pair: str):
+        locator = (
+            By.CSS_SELECTOR,
+            f'#favorite-candidates [data-pair-toggle="{pair}"]',
+        )
+        WebDriverWait(self.driver, 5).until(
+            EC.element_to_be_clickable(locator)
+        ).click()
+
+    def toggle_favorite_pair(self, pair: str):
+        locator = (
+            By.CSS_SELECTOR,
+            f'#overview-pairs [data-pair-toggle="{pair}"]',
+        )
+        WebDriverWait(self.driver, 5).until(
+            EC.element_to_be_clickable(locator)
+        ).click()
+
+    def get_favorite_star_text(self, pair: str):
+        locator = (
+            By.CSS_SELECTOR,
+            f'#overview-pairs [data-pair-toggle="{pair}"]',
+        )
+        return WebDriverWait(self.driver, 5).until(
+            EC.visibility_of_element_located(locator)
+        ).text
 
     def get_first_favorite_star_text(self):
         return self.driver.find_elements(*self.FAVORITE_STARS)[0].text
 
     def get_favorite_card_texts(self):
         return [element.text for element in self.driver.find_elements(*self.FAVORITE_CARDS)]
+
+    def wait_for_favorite_count(self, count: int, timeout: int = 5):
+        WebDriverWait(self.driver, timeout).until(
+            lambda driver: len(driver.find_elements(*self.FAVORITE_CARDS)) == count
+        )
 
     def add_portfolio_holding(self, currency: str, amount: str, notes: str = ""):
         self.click(*self.PORTFOLIO_OPEN)
