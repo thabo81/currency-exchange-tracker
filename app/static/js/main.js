@@ -615,64 +615,125 @@ async function fetchRates(base = "USD") {
   return result;
 }
 
+async function fetchPairCardData(pair) {
+  const { base, quote } = pairCodes(pair);
+
+  try {
+    const preview = await requestJson("/convert/preview", {
+      method: "POST",
+      body: JSON.stringify({ amount: 1, from_currency: base, to_currency: quote }),
+    });
+
+    let changeText = "No history";
+    let changeClass = "neutral-foot";
+
+    const points = await requestJson(`/trends/${base}/${quote}?days=7`);
+    if (points.length >= 2) {
+      const first = Number(points[0].rate);
+      const last = Number(points[points.length - 1].rate);
+      const change = first ? ((last - first) / first) * 100 : 0;
+      changeText = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
+      changeClass = change >= 0 ? "positive" : "negative";
+    }
+
+    return {
+      pair,
+      base,
+      quote,
+      rate: formatRate(preview.rate, 4),
+      changeText,
+      changeClass,
+      source: preview.source === "live" ? "LIVE" : "CACHED",
+    };
+  } catch {
+    return {
+      pair,
+      base,
+      quote,
+      rate: "—",
+      changeText: "Unavailable",
+      changeClass: "neutral-foot",
+      source: "UNAVAILABLE",
+    };
+  }
+}
+
+function pairCardMarkup(data, mode = "favorite") {
+  const favorite = isFavorite(data.base, data.quote);
+  const label = favorite ? "Remove from favorites" : "Add to favorites";
+
+  return `
+    <article class="panel pair-card" data-favorite-pair="${data.pair}">
+      <div class="pair-top">
+        <div class="pair-codes">
+          <span class="pair-badge">${data.base}</span>
+          <span class="pair-slash">/</span>
+          <span>${data.quote}</span>
+        </div>
+        <button
+          class="star-button"
+          type="button"
+          data-pair-toggle="${data.pair}"
+          aria-label="${label}"
+          title="${label}"
+        >${mode === "favorite" ? "★" : "☆"}</button>
+      </div>
+      <div class="pair-rate tabular">${data.rate}</div>
+      <div class="pair-bottom">
+        <span class="rate-chip ${data.changeClass === "positive" ? "positive" : data.changeClass === "negative" ? "negative" : "neutral-foot"}">${data.changeText}</span>
+        <span class="eyebrow">${data.source}</span>
+      </div>
+    </article>
+  `;
+}
+
+async function renderFavoriteCandidates() {
+  const section = document.getElementById("favorite-candidates-section");
+  const container = document.getElementById("favorite-candidates");
+  if (!section || !container) return;
+
+  const availablePairs = WATCHED_PAIRS.filter((pair) => {
+    const { base, quote } = pairCodes(pair);
+    return !isFavorite(base, quote);
+  });
+
+  if (!availablePairs.length) {
+    section.hidden = true;
+    container.innerHTML = "";
+    return;
+  }
+
+  const cards = await Promise.all(availablePairs.map(fetchPairCardData));
+  container.innerHTML = cards.map((card) => pairCardMarkup(card, "candidate")).join("");
+  section.hidden = false;
+}
+
 async function renderOverviewPairs() {
   const container = document.getElementById("overview-pairs");
   if (!container) return;
 
-  const pairList = cachedFavorites.length
-    ? cachedFavorites.map((fav) => `${fav.base_currency}/${fav.quote_currency}`)
-    : WATCHED_PAIRS;
+  // A new account must see an empty personal watchlist.
+  // Suggested pairs are rendered separately so they do not appear as saved favorites.
+  if (!cachedFavorites.length) {
+    container.innerHTML = `
+      <article id="overview-favorites-empty" class="panel pair-empty">
+        <div class="favorite-empty-content">
+          <b>Your favorites are empty</b>
+          <span>Choose a currency pair below and click ☆ to add it to your personal watchlist.</span>
+        </div>
+      </article>
+    `;
+    await renderFavoriteCandidates();
+    return;
+  }
 
-  const cards = await Promise.all(pairList.slice(0, 4).map(async (pair) => {
-    const { base, quote } = pairCodes(pair);
+  const pairList = cachedFavorites.map((fav) => `${fav.base_currency}/${fav.quote_currency}`);
+  const cards = await Promise.all(pairList.slice(0, 4).map(fetchPairCardData));
 
-    try {
-      const preview = await requestJson("/convert/preview", {
-        method: "POST",
-        body: JSON.stringify({ amount: 1, from_currency: base, to_currency: quote }),
-      });
-
-      let changeText = "No history";
-      let changeClass = "neutral-foot";
-
-      const points = await requestJson(`/trends/${base}/${quote}?days=7`);
-      if (points.length >= 2) {
-        const first = Number(points[0].rate);
-        const last = Number(points[points.length - 1].rate);
-        const change = first ? ((last - first) / first) * 100 : 0;
-        changeText = `${change >= 0 ? "+" : ""}${change.toFixed(2)}%`;
-        changeClass = change >= 0 ? "positive" : "negative";
-      }
-
-      return `
-        <article class="panel pair-card">
-          <div class="pair-top">
-            <div class="pair-codes"><span class="pair-badge">${base}</span><span class="pair-slash">/</span><span>${quote}</span></div>
-            <button class="star-button" type="button" data-pair-toggle="${pair}" aria-label="${isFavorite(base, quote) ? "Remove from favorites" : "Add to favorites"}">${isFavorite(base, quote) ? "★" : "☆"}</button>
-          </div>
-          <div class="pair-rate tabular">${formatRate(preview.rate, 4)}</div>
-          <div class="pair-bottom"><span class="rate-chip ${changeClass === "positive" ? "positive" : changeClass === "negative" ? "negative" : "neutral-foot"}">${changeText}</span><span class="eyebrow">${preview.source === "live" ? "LIVE" : "CACHED"}</span></div>
-        </article>
-      `;
-    } catch {
-      return `
-        <article class="panel pair-card">
-          <div class="pair-top"><div class="pair-codes"><span class="pair-badge">${base}</span><span class="pair-slash">/</span><span>${quote}</span></div></div>
-          <div class="pair-rate tabular">—</div>
-          <div class="pair-bottom"><span class="eyebrow">Unavailable</span></div>
-        </article>
-      `;
-    }
-  }));
-
-  container.innerHTML = cards.join("");
-  container.querySelectorAll("[data-pair-toggle]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const [base, quote] = button.dataset.pair.split("/");
-      toggleFavoritePair(base, quote);
-    });
-  });
+  container.innerHTML = cards.map((card) => pairCardMarkup(card, "favorite")).join("");
+  await renderFavoriteCandidates();
 }
+
 
 async function loadOverview() {
   updateIdentity();
@@ -1253,11 +1314,9 @@ function initDashboard() {
     if (event.target === event.currentTarget) closeMoreDrawer();
   });
 
-  loadFavorites()
-    .then(loadAlerts)
-    .then(loadOverview)
-    .catch((error) => console.error(error));
-
+  // The selected view is responsible for loading its own data.
+  // Avoid a second competing overview load, which can rerender the favorite cards
+  // while a Selenium test is clicking a star and cause stale element errors.
   previewConversion();
 }
 
