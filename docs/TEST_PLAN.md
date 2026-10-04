@@ -1,193 +1,132 @@
-## Testing See [TEST_PLAN.md](docs/TEST_PLAN.md) for the full test strategy, scope, and test cases.
-
 # Test Plan — Currency Exchange Tracker
-**Test Plan ID:** CET-TP-01
-**Prepared by:** Thabo Addy Mahlangu
-**Application under test:** Currency Exchange Tracker (FastAPI backend + Jinja2/vanilla JS frontend)
-**Version:** Direct-registration & feature-integration release
 
----
+**Test Plan ID:** CET-TP-01  
+**Application:** Currency Exchange Tracker  
+**Status:** Completed  
+**Role:** Thabo Addy Mahlangu — Test Lead, Test Designer, Tester
 
-## How to use this document (a quick ISTQB-style orientation)
+## 1. Objective
 
-This test plan follows the same shape as the IEEE 829 / ISTQB CTFL syllabus structure —
-Scope → Approach → Environment → Criteria → Schedule → Risks. Every real test plan you
-write in a job will roughly follow this skeleton, even if company templates rename a
-few sections. The value of writing one isn't the document itself — it's that writing it
-forces you to think through *what* you're testing, *how*, *where*, and *when you'd stop*,
-before you write a single test case. Treat each section below as a rehearsal for that
-thinking process, not just a fill-in-the-blanks form.
+Validate the functional behaviour, API contracts, authentication/session handling, currency conversion reliability, dashboard workflows, responsive UX, and regression stability of the Currency Exchange Tracker.
 
----
-
-## 1. Introduction
-
-This plan covers testing of all current features of the Currency Exchange Tracker
-following the recent integration of Favorites, Portfolio, Alerts, Conversion History,
-Rate Trends, and the direct registration/login flow. The goal is to validate functional correctness, catch regressions introduced
-during integration, and establish a baseline for API and basic performance behavior.
+The test strategy combines exploratory testing, API testing, UI automation, negative/boundary testing, defect investigation, regression testing, and production smoke verification.
 
 ## 2. Scope
 
-### In Scope
-- User registration and direct registration and login (code generation,
-  expiry, resend limiting)
-- Login, JWT access token issuance, "Remember me" checkbox behavior
-- Currency conversion (`/convert`), live/cached rate fetching (`/rates`)
-- Favorites (add/remove/list, star toggle)
-- Portfolio (add/remove/list holdings)
-- Alerts (add/remove/list, target rate direction logic)
-- Conversion history (`/history/recent`)
-- Rate trend history (`/trends/{base}/{quote}`) and the background polling job
-- Currency dropdown content (expanded list added recently)
-- Basic API-level performance/load behavior under moderate concurrent load
+### In scope
+- Direct user registration and login.
+- JWT access/refresh-token handling.
+- Protected-route authorization.
+- Currency conversion and validation.
+- Live/cached exchange-rate behaviour.
+- Favourites.
+- Portfolio.
+- Alerts.
+- Conversion History.
+- Stored rate Trends.
+- Dashboard navigation and interaction.
+- Responsive/mobile layout.
+- Theme/settings behaviour.
+- Selenium browser regression.
+- CI build and test verification.
+- Production smoke testing.
 
-### Out of Scope
-- Actual alert-triggered email notifications (not yet implemented — alerts are stored
-  but nothing currently checks them against live rates and fires a notification)
-- Penetration testing / advanced security testing (only basic authorization checks are
-  included — see Section 4)
-- Load testing at production-representative scale (this plan targets learning-level
-  load testing, not capacity planning for real traffic)
-- Payment processing (not a feature of this app)
+### Out of scope
+- Email verification or OTP.
+- Automated alert notification delivery.
+- Advanced penetration testing.
+- Production-scale load/capacity engineering.
+- Real-time tick-by-tick market feeds.
+- Financial prediction/advice.
 
-## 3. Test Items
+## 3. Test Levels
 
-| Item | Description |
-|---|---|
-| `/register` | Direct account registration |
-| `/login`, `/refresh-token` | Auth and token issuance |
-| `/convert`, `/rates` | Currency conversion |
-| `/favorites` (GET/POST/DELETE) | Favorite currency pairs |
-| `/portfolio` (GET/POST/DELETE) | Portfolio holdings |
-| `/alerts` (GET/POST/DELETE) | Rate alerts |
-| `/history/recent` | Conversion history |
-| `/trends/{base}/{quote}` | Rate trend data |
-| `rate_history_job` (background scheduler) | Populates trend data every 15 min |
-| Dashboard UI (`dashboard.html` + `main.js`) | All dashboard interactions |
-| Login/Register UI (`login.html` + `main.js`) | Direct registration and login |
-
-## 4. Test Approach
-
-**Functional testing** — Every endpoint and UI flow gets at least one happy-path test and EP/BVA-based negative tests for `/register`, `/login`, `/convert`, `/portfolio`, and `/alerts`.
-
-**API testing** — Use curl, Postman, or a quick Python `requests` script to call each
-endpoint directly, independent of the UI. This is what actually proves the backend is
-correct versus the frontend just hiding backend bugs (or vice versa — you saw this
-happen already with the missing `</select>` tag masking working backend endpoints).
-
-**UI / manual exploratory testing** — Click through every dashboard feature by hand,
-including edge interactions the automated/API tests won't cover: rapid double-clicking
-Convert, switching currency pairs quickly while a request is in flight, resizing the
-browser to the mobile breakpoint (`@media max-width: 820px`), and navigating between
-panels repeatedly.
-
-**Basic performance/load testing (JMeter)** — Build a simple Thread Group in JMeter
-hitting `/convert` and `/rates` with, say, 20-50 concurrent simulated users for a few
-minutes. You're not trying to find a breaking point at this stage — you're learning to
-read JMeter's response-time and error-rate graphs, and getting a baseline of how the
-app behaves under mild concurrent load. A good first goal: confirm response times stay
-reasonably flat as concurrent users increase, rather than degrading sharply.
-
-**Basic authorization checks** — Since Favorites/Portfolio/Alerts/History are scoped to
-`user.user_id` server-side, verify that User A's token can never see or modify User B's
-data by manually swapping tokens between two test accounts.
-
-## 5. Entry Criteria
-- Latest code is deployed to Render and the build succeeds (check deploy logs)
-- Local dev environment starts cleanly (`python -c "import app.main"` succeeds)
-- No email-delivery configuration is required because email verification is not part of the app
-- At least two test user accounts exist (for authorization cross-checks)
-
-## 6. Exit Criteria
-- All High-priority test cases in Section 8 have been executed
-- No open High-severity defects remain unresolved (Medium/Low may be logged and
-  deferred with justification)
-- API and UI results match for every feature (no silent frontend-only or
-  backend-only failures)
-- A basic JMeter run has been completed and results recorded, even if just as a baseline
-
-## 7. Pass/Fail Criteria
-A test case **passes** when actual result matches expected result exactly, including
-correct HTTP status codes on the API layer. A test case **fails** if: the result is
-wrong, an unhandled exception/500 occurs, or the UI silently does nothing where an
-error or success message was expected.
-
-## 8. Test Cases by Feature (representative — expand each row into full test cases
-as you execute)
-
-| ID | Feature | Test Case | Type | Priority |
-|---|---|---|---|---|
-| TC-A01 | Registration | Register with valid data → account is created without verification | Functional/API | High |
-| TC-A02 | Registration | Register with an existing email → 409 conflict | Functional/API | High |
-| TC-A03 | Registration | Password below 8 or above 128 characters → 422 | Functional/API/BVA | High |
-| TC-A04 | Login | Valid credentials → access_token and refresh_token returned | Functional/API | High |
-| TC-A05 | Login | Invalid credentials → 401 returned | Functional/API | High |
-| TC-A06 | Token security | Use an access token at /refresh-token → 401 returned | Security/API | High |
-| TC-A07 | Token security | Use a refresh token on an access-token-protected route → 401 returned | Security/API | High |
-| TC-A08 | Registration UI | Successful registration returns to login; no OTP panel appears | Functional/UI | High |
-| TC-A09 | Login UI | Successful login navigates to dashboard | Functional/UI | High |
-| TC-C01 | Conversion | Convert 1000 USD → ZAR, guest (no token) → succeeds, history NOT logged to any user | Functional/API | High |
-| TC-C02 | Conversion | Convert while logged in → succeeds, entry appears in `/history/recent` | Functional/API | High |
-| TC-C03 | Conversion | Convert with amount = 0 → check actual validation behavior (no explicit min enforced in ConvertRequest beyond gt=0) | Functional/BVA | Medium |
-| TC-C04 | Conversion | Convert using a currency in the dropdown but NOT in `DEFAULT_RATES` fallback (e.g. INR) during a simulated API failure → check for silent wrong-rate risk (see Risks) | Functional/Negative | Medium |
-| TC-F01 | Favorites | Add a pair → appears in sidebar chips immediately | Functional/UI | High |
-| TC-F02 | Favorites | Add the same pair twice → second attempt returns 409 | Functional/API | Medium |
-| TC-F03 | Favorites | Remove a favorite → disappears from list, further attempts to delete same ID return 404 | Functional/API | Medium |
-| TC-P01 | Portfolio | Add a holding → appears in list | Functional/UI | High |
-| TC-P02 | Portfolio | Remove a holding not owned by the logged-in user (using another user's ID) → 404, not leaked | Security/Authorization | High |
-| TC-AL01 | Alerts | Add alert with invalid direction (not "above"/"below") → 422 | Functional/BVA | Medium |
-| TC-AL02 | Alerts | Add alert, then confirm it does NOT get emailed/triggered automatically (documenting the current out-of-scope gap) | Functional | Low |
-| TC-H01 | History | `/history/recent` returns only the logged-in user's own conversions | Security/Authorization | High |
-| TC-T01 | Trends | `/trends/USD/ZAR` returns empty array before first scheduler run, populated array after | Functional/API | Medium |
-| TC-T02 | Trends | Sparkline renders "not enough trend data yet" message correctly on empty response | Functional/UI | Low |
-| TC-U01 | UI | Resize browser to <820px → layout switches to single-column per media query | Functional/UI | Low |
-| TC-U02 | UI | Rapidly click Convert multiple times → no duplicate/broken history entries, no UI freeze | Exploratory | Medium |
-| TC-PF01 | Performance | 20 concurrent users hitting `/convert` for 2 minutes via JMeter → record avg/max response time, error rate | Performance | Medium |
-| TC-PF02 | Performance | Same load against `/rates` → compare response time to `/convert` (different code paths — one hits FX API/cache, one also does math) | Performance | Low |
-
-## 9. Test Environment
-- **Local:** `python -m uvicorn app.main:app --reload`, SQLite or local Postgres,
-  `http://localhost:8000`
-- **Deployed:** `https://currency-exchange-tracker-app.onrender.com`, PostgreSQL on Render
-- **Browsers:** Chrome and Firefox at minimum (you already found a Firefox-specific
-  bug once with GitHub's editor — cross-browser checks are worth keeping habitual)
-- **Test data:** at least 2 distinct user accounts for authorization cross-checks
-- **Tools:** curl/Postman (API), browser DevTools (UI/network), JMeter (performance)
-
-## 10. Test Deliverables
-- This test plan
-- Detailed test case sheet (expand Section 8 as you execute — track actual results,
-  pass/fail, evidence/screenshots)
-- Defect log (GitHub Issues, per your current setup)
-- JMeter test plan file (`.jmx`) and a results summary
-- Final test summary report (brief — what passed, what didn't, what's still open)
-
-## 11. Schedule (rough, self-paced)
-| Phase | Focus | Environment |
+| Level | Purpose | Tooling |
 |---|---|---|
-| 1 | Functional + API — Authentication | Local |
-| 2 | Functional + API — Conversion, Favorites, Portfolio, Alerts, History, Trends | Local |
-| 3 | UI/manual exploratory — full dashboard walkthrough | Local |
-| 4 | Regression — repeat Phases 1-3 against deployed environment | Deployed |
-| 5 | Basic JMeter load testing | Deployed (or local, your choice) |
-| 6 | Defect logging, retest, final summary report | Both |
+| API/backend | Validate business rules and HTTP behaviour independently of UI | FastAPI TestClient, HTTPX, Pytest |
+| Service | Validate conversion and exchange-rate logic | Pytest |
+| UI | Validate critical user journeys in a real browser | Selenium, Pytest |
+| Exploratory/manual | Discover UX, state, responsive, and integration defects | Browser DevTools/manual testing |
+| CI | Validate build + automated regression on every PR/push to main | GitHub Actions |
+| Production smoke | Verify deployed application behaviour | Browser + configurable Selenium target |
 
-## 12. Roles & Responsibilities
-Since this is a solo project: Thabo acts as Test Lead, Test Designer, and Tester for
-all phases. Worth stating explicitly in any plan you write professionally — even solo
-projects benefit from naming this, since it forces clarity on who signs off.
+## 4. Test Design Techniques
 
-## 13. Risks & Contingencies
+The project uses:
+- positive/happy-path testing;
+- negative testing;
+- boundary-value analysis;
+- equivalence classes;
+- authentication/security checks;
+- regression testing;
+- defect-based test design;
+- exploratory testing.
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| `DEFAULT_RATES` fallback dict doesn't cover all dropdown currencies | Silent incorrect conversion rate (defaults to 1.0) if the live FX API fails for an uncommon currency | Test TC-C04 explicitly; consider expanding `DEFAULT_RATES` as a follow-up fix, not covered in this test cycle |
-| "Remember me" token generated but not consumed anywhere in the frontend | Feature appears broken/incomplete to a user who expects persistent login | Documented in TC-A09 as a known gap to confirm, not silently assumed fixed |
-| Alerts are stored but never checked against live rates | Feature is visibly incomplete (a "silent" gap) | Explicitly out of scope this cycle — don't test as if it should trigger anything yet |
-| Third-party FX API (open.er-api.com) downtime or rate limiting | Conversion falls back to cache/defaults, which may be stale or incomplete | Note during testing if it happens; not something you control directly |
+Examples include password length boundaries, conversion amount boundaries, currency-code length boundaries, invalid token types, invalid alert directions, malformed provider responses, unsupported currencies, and authenticated user-data scoping.
 
-## 14. Approval
-Since this is a self-directed learning/portfolio project, "sign-off" here just means:
-you've gone through Sections 5-8, logged what you found, and you're satisfied the app
-behaves as documented (bugs and all) before calling this test cycle complete.
+## 5. Automated Regression
+
+The final CI suite executes **44 tests successfully**.
+
+Key coverage areas:
+- authentication and token security;
+- request validation;
+- conversion service behaviour;
+- fallback/cached rates;
+- conversion History persistence;
+- favourites;
+- portfolio;
+- alerts;
+- trend-data/UI handling;
+- registration/login UI;
+- conversion UI.
+
+## 6. Manual Acceptance Criteria
+
+Manual acceptance required all of the following to work correctly:
+- Overview;
+- Convert;
+- Trends + threshold;
+- Portfolio;
+- History;
+- Alerts;
+- Settings;
+- mobile layout;
+- authentication/session recovery.
+
+All were verified and approved.
+
+## 7. Defect Management
+
+Defects were recorded with:
+- defect title;
+- severity and priority;
+- environment;
+- reproduction steps;
+- expected result;
+- actual result;
+- root-cause analysis;
+- fix/resolution;
+- verification outcome.
+
+See [Defect Log](DEFECT_LOG.md).
+
+## 8. CI Acceptance
+
+The final post-merge GitHub Actions run passed all workflow stages:
+- frontend dependency installation;
+- TypeScript type checking;
+- Vite production build;
+- static bundle verification;
+- Chrome installation;
+- Python dependency installation;
+- FastAPI startup;
+- full Pytest execution.
+
+Final result: **44 passed, 10 warnings**.
+
+## 9. Final Outcome
+
+**PASS — test cycle complete.**
+
+The application passed automated regression, manual acceptance, and production smoke verification. Remaining warnings are maintenance/deprecation items rather than release-blocking defects.
