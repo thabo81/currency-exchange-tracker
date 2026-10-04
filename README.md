@@ -1,271 +1,362 @@
 # Currency Exchange Tracker
 
-A full-stack currency conversion web application built with **Python, FastAPI, SQLAlchemy, Jinja2, HTML/CSS/JavaScript, and a React/Recharts trend widget**. It supports currency conversion using live exchange-rate data when available, a cached-rate fallback, and account-based features such as favourites, portfolio holdings, conversion history, rate trends, and target-rate alerts.
+[![Tests](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-0F8B8D)](https://currency-exchange-tracker-app.onrender.com)
 
-[![Automated Tests](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml/badge.svg)](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml)
+A full-stack currency exchange application built with **Python, FastAPI, SQLAlchemy, Jinja2, JavaScript, React, Recharts, and Selenium**.
 
-> **Project focus:** Application development and QA automation practice. The repository includes Pytest API/backend tests, Selenium browser UI tests, test documentation, and a GitHub Actions workflow. Check the Actions tab for the latest CI result.
+The application provides live/cached currency conversion plus authenticated user features including favourites, portfolio holdings, conversion history, rate trends, and target-rate alerts.
 
-## Contents
+> **Portfolio focus:** This project demonstrates a complete QA/SDET workflow: exploratory testing, defect investigation, API testing, Selenium UI automation with the Page Object Model, regression testing, CI/CD, production verification, and defect-driven remediation.
 
-- [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Project Structure](#project-structure)
-- [Getting Started](#getting-started)
-- [Running the Tests](#running-the-tests)
-- [Testing Approach](#testing-approach)
-- [CI Workflow](#ci-workflow)
-- [Known Limitations](#known-limitations)
-- [Documentation](#documentation)
+## Project Status
 
-## Features
+**Completed and production-verified.**
 
-### Currency conversion and exchange rates
+- Phase 1 — Authentication: complete
+- Phase 2 — Currency conversion reliability: complete
+- Phase 3 — Premium dashboard, responsive UX, history, trends, and session recovery: complete
+- Automated regression suite: passing
+- GitHub Actions: passing
+- Render deployment: verified
+- Phase 3 manual acceptance: approved
+- Open GitHub issues: 0
 
-- Convert between supported currencies.
-- Retrieve current exchange-rate data from an external rate provider.
-- Fall back to cached rates or built-in default rates when live rate retrieval is unavailable.
-- Display rate information and update timestamps in the interface.
-- View historical rate trends where rate-history data is available.
+## Live Application
 
-### User accounts and sessions
+**Production:** https://currency-exchange-tracker-app.onrender.com
 
-- Direct user registration without email verification.
-- Login with password hashing and JWT-based access tokens.
-- Refresh-token/session handling.
-- Input validation and authentication error handling.
+The production deployment is used for manual smoke testing and environment-level verification. The Selenium UI suite is also designed to accept a configurable `BASE_URL` / `--base-url` so the same automation can target local or deployed environments.
 
-### Personal dashboard features
+## What the Application Does
 
-- Save and manage favourite currency pairs.
-- Track currency holdings in a portfolio.
-- Review recent conversion history.
-- Create target-rate alerts.
-- Use dashboard controls for common currency conversion actions.
+### Currency conversion
+- Converts between supported currencies.
+- Uses live exchange-rate data when available.
+- Falls back to cached/default rate data when the provider is unavailable.
+- Separates conversion preview from persisted conversion history.
+- Shows the converted value with currency symbol/code and rate-source information.
 
-> Rate alerts can be created and stored. Automated alert evaluation and notification delivery are not currently described as implemented features.
+### Authentication and session management
+- Direct account registration.
+- Password hashing.
+- JWT access and refresh tokens.
+- Refresh-token flow for expired access tokens.
+- Explicit handling of invalid/expired sessions.
+- Authenticated user identity displayed in the dashboard.
+- No email verification or OTP workflow is required.
+
+### Personal finance features
+- Save and remove favourite currency pairs.
+- Track portfolio holdings.
+- Review authenticated conversion history.
+- Create and manage target-rate alerts.
+- Analyse stored trend data on a dedicated Trends screen.
+- Light/dark theme support.
+- Responsive desktop/tablet/mobile layouts.
+
+## Architecture Overview
+
+The application uses a small full-stack architecture with a Python API/backend, server-rendered dashboard, browser-side application logic, a React/Recharts trend widget, persistent storage, and automated QA assets.
+
+```mermaid
+flowchart LR
+    U[User / Browser] --> UI[Jinja2 Dashboard + JavaScript]
+    UI --> API[FastAPI Application]
+    UI --> TW[React / Recharts Trend Widget]
+    API --> AUTH[JWT + Session Handling]
+    API --> DB[(SQLAlchemy Database)]
+    API --> FX[External FX Provider]
+    FX --> CACHE[Rate Cache / Fallback]
+    JOB[APScheduler Rate History Job] --> API
+    QA[Selenium + Pytest] --> U
+    CI[GitHub Actions] --> QA
+    CI --> BUILD[Node / Vite Widget Build]
+```
+
+See [Architecture](docs/ARCHITECTURE.md) for the component responsibilities and request/data flows.
 
 ## Technology Stack
 
-| Area | Technologies |
+| Area | Technology |
 |---|---|
 | Language | Python |
-| Backend and HTTP API | FastAPI, Uvicorn |
-| Database access | SQLAlchemy |
-| Database options | SQLite for local/CI use; PostgreSQL can be configured |
-| Frontend | Jinja2 templates, HTML, CSS, JavaScript, React, Recharts, Lucide React |
+| Backend | FastAPI, Uvicorn |
+| Data layer | SQLAlchemy |
+| Database | SQLite locally/CI; PostgreSQL supported for deployment |
+| Server-rendered UI | Jinja2, HTML, CSS, JavaScript |
+| Trend visualization | React, Recharts, Lucide React |
 | Browser automation | Selenium WebDriver |
 | Test framework | Pytest |
-| API test utilities | FastAPI TestClient, HTTPX |
+| HTTP/API testing | FastAPI TestClient, HTTPX |
 | Authentication | JWT, password hashing |
 | Scheduling | APScheduler |
-| CI | GitHub Actions |
+| CI/CD | GitHub Actions |
+| Deployment | Render |
+
+## QA / SDET Engineering
+
+This repository is deliberately structured as a **testable application**, not only as a feature demo.
+
+### Test strategy
+- Functional testing of core workflows.
+- API/backend validation independent of the browser UI.
+- Selenium browser automation for critical user journeys.
+- Page Object Model for reusable UI interaction and selectors.
+- Boundary-value and negative testing for validation rules.
+- Authentication and authorization checks.
+- Regression testing after defect fixes.
+- Exploratory testing across desktop and mobile layouts.
+- Production smoke verification.
+- CI execution on pull requests and pushes to `main`.
+
+### Automated test coverage
+
+The current GitHub Actions regression run executes **44 tests successfully**.
+
+The automated suite covers:
+
+| Area | Examples |
+|---|---|
+| Authentication | Registration, login, duplicate registration, access/refresh token separation |
+| Validation | Password boundaries, amount boundaries, currency-code boundaries |
+| Conversion | Conversion accuracy, unsupported currencies, cached fallback, malformed provider data |
+| History | Preview does not persist; authenticated conversion is stored |
+| Security | Invalid access token rejection; protected token-type boundaries |
+| Favourites | Add/remove and persistence behaviour |
+| Portfolio | Add/remove holding |
+| Alerts | Add/remove and direction validation |
+| Trends | Available/missing trend-data rendering |
+| UI | Registration/login flow and currency conversion flow |
+
+Latest successful CI execution: **GitHub Actions run #82** on the merged `main` commit.
+
+> CI completed with **44 passed, 10 warnings**. The warnings are dependency/framework deprecation warnings; they did not fail the test run.
+
+See [Final Test Summary](docs/TEST_SUMMARY.md) for the evidence and final acceptance record.
+
+## Defect-Driven Testing
+
+A major part of the project was using testing to discover problems rather than only verifying the happy path.
+
+Two representative defects were investigated and fixed:
+
+### Production API environment defect
+The frontend originally used a hardcoded `localhost` API base URL. This worked locally but caused production API requests to target the user's own machine.
+
+**Resolution:** changed the frontend to use relative API paths so the same client code works in local and deployed environments.
+
+### Test-framework environment defect
+The Selenium Page Object Model originally hardcoded `localhost`, preventing the same UI tests from targeting Render.
+
+**Resolution:** introduced a configurable `base_url` fixture with CLI/environment support.
+
+These defects are documented in [Defect Log](docs/DEFECT_LOG.md).
+
+## CI Pipeline
+
+The GitHub Actions workflow validates both frontend and backend assets before completing the regression suite.
+
+The pipeline:
+
+1. Checks out the repository.
+2. Installs Python 3.12.
+3. Installs Node.js 20.
+4. Runs `npm ci`.
+5. Runs TypeScript type checking.
+6. Builds the React/Recharts trend widget.
+7. Verifies the generated static bundle exists.
+8. Installs Chrome.
+9. Installs Python dependencies.
+10. Starts FastAPI.
+11. Runs the complete Pytest suite.
+12. Prints server logs only when the test job fails.
+
+[View GitHub Actions](https://github.com/thabo81/currency-exchange-tracker/actions)
 
 ## Project Structure
 
 ```text
 currency-exchange-tracker/
-├── frontend/
-│   ├── package.json            # React/Recharts/Lucide widget dependencies
-│   ├── tsconfig.json           # TypeScript settings for the widget
-│   ├── vite.config.ts          # Builds the widget into app/static/
-│   └── src/main.tsx            # Recharts trend widget entry point
 ├── app/
-│   ├── main.py                 # FastAPI application and core routes
-│   ├── auth.py                 # Authentication utilities
-│   ├── database.py             # SQLAlchemy engine and database session
-│   ├── dependencies.py         # Shared request dependencies
-│   ├── models.py               # Database models
-│   ├── schemas.py              # Request/response validation schemas
-│   ├── services.py             # Exchange-rate retrieval and conversion logic
-│   ├── rate_history_job.py     # Rate-history background job
-│   ├── routers/                # Feature routes
-│   ├── templates/              # Jinja2 HTML templates
-│   └── static/                 # CSS and JavaScript
+│   ├── main.py                  # FastAPI application and core routes
+│   ├── auth.py                  # JWT and password utilities
+│   ├── database.py              # SQLAlchemy database configuration
+│   ├── dependencies.py          # Shared request/auth dependencies
+│   ├── models.py                # SQLAlchemy models
+│   ├── schemas.py               # Request validation schemas
+│   ├── services.py              # Exchange-rate and conversion logic
+│   ├── rate_history_job.py      # Scheduled trend-data collection
+│   ├── routers/features.py      # Portfolio, favourites, alerts, history, trends
+│   ├── templates/               # Jinja2 login/dashboard templates
+│   └── static/                  # CSS, JavaScript, compiled trend widget
+├── frontend/
+│   ├── src/main.tsx             # React/Recharts trend widget
+│   ├── vite.config.ts           # Widget build configuration
+│   ├── package.json             # Frontend dependencies/scripts
+│   └── package-lock.json
 ├── pages/
-│   ├── base_page.py            # Shared Selenium page behaviour
-│   ├── login_page.py           # Login/registration page object
-│   └── dashboard_page.py       # Dashboard page object
+│   ├── base_page.py             # Shared Selenium page behaviour
+│   ├── login_page.py            # Login/register Page Object
+│   └── dashboard_page.py        # Dashboard Page Object
 ├── tests/
-│   ├── conftest.py             # Pytest fixtures and test setup
-│   ├── test_auth.py            # Authentication and request-validation tests
-│   ├── test_registration_ui.py # Direct-registration UI tests
-│   ├── test_ui.py              # UI tests
-│   └── test_dashboard_features_ui.py
+│   ├── conftest.py              # Fixtures and environment configuration
+│   ├── test_auth.py             # Authentication, validation, security
+│   ├── test_conversion_service.py
+│   ├── test_dashboard_features_ui.py
+│   ├── test_registration_ui.py
+│   └── test_ui.py
 ├── docs/
-│   ├── TEST_PLAN.md            # Test scope, approach, and planned coverage
-│   └── DEFECT_LOG.md           # Structured defect documentation
-├── .github/workflows/
-│   └── tests.yml               # GitHub Actions test workflow
+│   ├── ARCHITECTURE.md
+│   ├── TEST_PLAN.md
+│   ├── TEST_SUMMARY.md
+│   └── DEFECT_LOG.md
+├── .github/workflows/tests.yml
 ├── requirements.txt
 └── README.md
 ```
 
-## Getting Started
+## Run Locally
 
 ### Prerequisites
+- Python 3.12+
+- Chrome for Selenium tests
+- Git
+- Node.js 20+ and npm only when rebuilding the trend widget
 
-- Python 3.12 or a compatible Python version.
-- Google Chrome for Selenium browser tests.
-- Git.
-- Node.js 20+ and npm for the React/Recharts trend widget.
-
-### 1. Clone the repository
+### Install Python dependencies
 
 ```bash
-git clone https://github.com/thabo81/currency-exchange-tracker.git
-cd currency-exchange-tracker
+python -m venv .venv
 ```
 
-### 2. Create and activate a virtual environment
-
-**Windows (PowerShell):**
+Windows PowerShell:
 
 ```powershell
-python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
-**macOS/Linux:**
+macOS/Linux:
 
 ```bash
-python3 -m venv .venv
 source .venv/bin/activate
 ```
-
-### 3. Install dependencies
 
 ```bash
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-### 4. Build the dashboard trend widget
+### Environment configuration
 
-The dashboard Trend screen uses **Recharts** for the actual chart and **Lucide React** for chart/status icons. The widget is compiled into `app/static/trend-widget` and loaded by the FastAPI dashboard template.
+Create a local `.env` file:
 
-From the repository root:
+```env
+DATABASE_URL=sqlite:///./currency_exchange.db
+JWT_SECRET=replace_with_a_local_development_secret
+RATE_API_KEY=
+```
+
+Do not commit real credentials or API keys.
+
+### Build the trend widget
+
+Only required when the React/Recharts widget needs to be rebuilt:
 
 ```bash
 cd frontend
-npm install recharts lucide-react
-npm install
+npm ci
 npm run typecheck
 npm run build
 cd ..
 ```
 
-The explicit `npm install recharts lucide-react` command installs the requested chart and icon packages; the following `npm install` installs the remaining React/Vite build dependencies declared in `frontend/package.json`.
-
-After the build completes, start FastAPI normally:
+### Start the application
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-The generated bundle is required for the Trends chart to render locally. CI builds it automatically before running the Python/Selenium test suite.
+Open:
 
-### 4. Configure environment variables
+http://localhost:8000
 
-The application defaults to a local SQLite database, so a database URL is not required for a basic local run. Create a `.env` file in the project root if you need to override settings:
+## Run the Tests
 
-```env
-DATABASE_URL=sqlite:///./currency_exchange.db
-JWT_SECRET=replace_with_a_local_development_secret
-# Optional: configure a rate provider key if required by your provider
-RATE_API_KEY=
-```
-
-Use a strong secret in any deployed environment. Do not commit real credentials or API keys to Git.
-
-For PostgreSQL, set `DATABASE_URL` to your PostgreSQL connection string and ensure the database is available. Review the application's current database setup before applying migrations; do not assume a migration command is required for every local setup.
-
-### 5. Start the application
-
-From the repository root, run:
-
-```bash
-uvicorn app.main:app --reload
-```
-
-Open [http://localhost:8000](http://localhost:8000) in your browser.
-
-## Running the Tests
-
-Run the complete test suite from the repository root:
+Run the complete suite:
 
 ```bash
 pytest -v
 ```
 
-Run individual test modules when debugging:
+Run specific suites:
 
 ```bash
 pytest tests/test_auth.py -v
+pytest tests/test_conversion_service.py -v
+pytest tests/test_dashboard_features_ui.py -v
 pytest tests/test_registration_ui.py -v
 pytest tests/test_ui.py -v
-pytest tests/test_dashboard_features_ui.py -v
 ```
 
-The suite includes API/backend tests and Selenium browser tests. Browser tests require Chrome and a compatible ChromeDriver/browser setup. Some dashboard UI tests use a separately running application through `BASE_URL` or `--base-url`.
-
-To point those tests at a running local application, start the server in one terminal:
+Run the UI suite against another environment without editing Page Objects:
 
 ```bash
-uvicorn app.main:app --reload
+pytest tests/test_ui.py -v --base-url=https://currency-exchange-tracker-app.onrender.com
 ```
 
-Then run the relevant test module in another terminal, for example:
+Or:
 
 ```bash
-pytest tests/test_dashboard_features_ui.py -v --base-url http://localhost:8000
+BASE_URL=https://currency-exchange-tracker-app.onrender.com pytest tests/test_ui.py -v
 ```
 
-Test setup and environment requirements are defined in `tests/conftest.py`. If tests fail, read the first failure and its traceback before changing the application or test setup.
+## Screenshots
 
-## Testing Approach
+The repository is prepared for a final product walkthrough with screenshots of the **real deployed application**.
 
-The project uses a mix of test techniques and automation patterns:
+Recommended captures:
+- Login / registration
+- Overview dashboard
+- Convert screen
+- Trends + threshold state
+- Portfolio
+- History
+- Alerts
+- Mobile layout
 
-- **Functional testing:** Validate user-visible behaviour and application responses.
-- **API/backend testing:** Exercise endpoints using FastAPI's `TestClient` and HTTPX.
-- **UI automation:** Use Selenium WebDriver to interact with pages in a browser.
-- **Page Object Model (POM):** Keep page locators and common browser interactions in reusable page classes.
-- **Negative and boundary testing:** Check invalid inputs and authentication and token-security edge cases.
-- **Regression testing:** Re-run automated checks after changes to help identify unintended behaviour.
-- **Test fixtures:** Use Pytest fixtures to configure clients, browsers, and test data.
-- **Defect documentation:** Record reproduction steps, expected/actual results, severity, priority, and investigation notes.
+Screenshots should be stored under `docs/screenshots/` and referenced here once captured from the production deployment.
 
-The test plan contains additional scope and test ideas. Items described as planned in that document should not be interpreted as completed testing unless test evidence has been recorded.
-
-## CI Workflow
-
-The GitHub Actions workflow in `.github/workflows/tests.yml` is configured to run when code is pushed to `main` or a pull request targets `main`. It:
-
-1. Checks out the repository.
-2. Sets up Python.
-3. Installs Chrome and project dependencies.
-4. Starts the FastAPI application.
-5. Runs `pytest -v`.
-6. Prints application logs if the job fails.
-
-View the [workflow runs](https://github.com/thabo81/currency-exchange-tracker/actions/workflows/tests.yml) for the current status and failure details. The workflow being configured does not, by itself, mean every run is passing.
-
-## Known Limitations
-
-- Live exchange-rate retrieval depends on the external provider and network availability; cached/default rates are used as fallbacks.
-- Rate alerts are stored, but automated rate evaluation and notification delivery are not currently implemented.
-- The test plan includes proposed performance/load testing. Do not treat that work as completed unless results and test evidence are added.
-- CI results can vary as the application and tests change. Use the Actions tab to check the latest run.
+> Screenshots should be real application captures rather than generated mockups so the portfolio evidence matches the deployed product.
 
 ## Documentation
 
+- [Architecture](docs/ARCHITECTURE.md)
 - [Test Plan](docs/TEST_PLAN.md)
+- [Final Test Summary](docs/TEST_SUMMARY.md)
 - [Defect Log](docs/DEFECT_LOG.md)
 - [GitHub Actions](https://github.com/thabo81/currency-exchange-tracker/actions)
+
+## SDET Portfolio Story
+
+This project demonstrates the workflow expected from a QA Automation / SDET engineer:
+
+**Explore → Identify risks → Design tests → Automate → Investigate failures → Fix defects → Retest → Run regression → Validate CI → Verify production → Document evidence**
+
+The strongest portfolio evidence is not the number of UI screens. It is the engineering process behind them:
+
+- built reusable Selenium Page Objects;
+- separated API/backend tests from UI tests;
+- tested invalid, boundary, and authentication scenarios;
+- diagnosed a production-only configuration defect;
+- improved the test framework so UI automation can target multiple environments;
+- added frontend build verification to CI;
+- used regression testing after fixes;
+- manually verified the final application on desktop and mobile;
+- closed the release with no remaining GitHub issues.
 
 ## Author
 
 **Thabo Addy Mahlangu**
 
-- GitHub: [@thabo81](https://github.com/thabo81)
+GitHub: [@thabo81](https://github.com/thabo81)
