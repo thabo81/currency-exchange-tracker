@@ -27,9 +27,14 @@ jobs:
       - name: Install frontend dependencies and build Recharts widget
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run typecheck
           npm run build
+
+      - name: Verify Recharts widget bundle
+        run: |
+          test -f app/static/trend-widget/trend-widget.js
+          ls -lh app/static/trend-widget/trend-widget.js
 
       - name: Install Chrome
         uses: browser-actions/setup-chrome@v1
