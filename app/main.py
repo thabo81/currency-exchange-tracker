@@ -138,6 +138,31 @@ def get_rates(base_currency: str = "USD"):
     return JSONResponse(content=snapshot)
 
 
+@app.post("/convert/preview")
+def convert_preview(payload: ConvertRequest):
+    """Preview a conversion without creating a persistent History record.
+
+    The dashboard uses this endpoint while the user edits an amount or pair.
+    A conversion becomes a History event only when the user explicitly submits
+    the conversion from the Convert screen.
+    """
+    try:
+        converted_amount, rate, source = convert_currency(
+            float(payload.amount), payload.from_currency, payload.to_currency
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    return {
+        "amount": float(payload.amount),
+        "from_currency": payload.from_currency.upper(),
+        "to_currency": payload.to_currency.upper(),
+        "converted_amount": round(converted_amount, 4),
+        "rate": round(rate, 6),
+        "source": source,
+    }
+
+
 @app.post("/convert")
 def convert(
     payload: ConvertRequest,

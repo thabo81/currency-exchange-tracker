@@ -40,7 +40,7 @@ def get_optional_user(
 ) -> User | None:
     if not authorization:
         return None
-    try:
-        return get_current_user(authorization=authorization, db=db)
-    except HTTPException:
-        return None
+    # No Authorization header means the request is intentionally anonymous.
+    # Once a header is supplied, invalid or expired credentials must not
+    # silently downgrade the request to guest access.
+    return get_current_user(authorization=authorization, db=db)
