@@ -15,18 +15,11 @@ def test_currency_conversion_ui(browser, base_url):
     dashboard_page.open_dashboard()
     time.sleep(1)
 
-    # 🔄 STRUCTURAL FIX: Click the navigation tab/sidebar link to open the Convert View
-    # If your page object uses a different method name (e.g. go_to_convert), match it here.
-    if hasattr(dashboard_page, 'go_to_convert'):
-        dashboard_page.go_to_convert()
-    elif hasattr(dashboard_page, 'click_nav_tab'):
-        dashboard_page.click_nav_tab('CONVERT')
-    else:
-        # Fallback inline selector text click if no explicit page helper exists yet
-        from selenium.webdriver.common.by import By
-        browser.find_element(By.XPATH, "//*[contains(text(), 'Convert')]").click()
-    
-    # Allow the layout panel animation state to render the inputs cleanly
+    # Conversion is a dedicated dashboard view in the Phase 3 redesign.
+    # Open that view before interacting with its form controls.
+    dashboard_page.go_to_view("convert")
+
+    # Allow the conversion panel to render before interacting with the form.
     time.sleep(0.5)
 
     # Proceed with the conversion transaction sequence
