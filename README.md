@@ -335,6 +335,8 @@ Screenshots should be stored under `docs/screenshots/` and referenced here once 
 - [Test Plan](docs/TEST_PLAN.md)
 - [Final Test Summary](docs/TEST_SUMMARY.md)
 - [Defect Log](docs/DEFECT_LOG.md)
+- [SDET Portfolio Case Study](docs/PORTFOLIO_CASE_STUDY.md)
+- [Screenshot Capture Guide](docs/screenshots/README.md)
 - [GitHub Actions](https://github.com/thabo81/currency-exchange-tracker/actions)
 
 ## SDET Portfolio Story
