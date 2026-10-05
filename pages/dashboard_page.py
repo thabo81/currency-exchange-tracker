@@ -161,6 +161,14 @@ class DashboardPage(BasePage):
     def get_portfolio_list_texts(self):
         return [el.text for el in self.driver.find_elements(*self.PORTFOLIO_ROWS)]
 
+    def get_portfolio_count(self):
+        return len(self.driver.find_elements(*self.PORTFOLIO_ROWS))
+
+    def wait_for_portfolio_count(self, count: int, timeout: int = 5):
+        WebDriverWait(self.driver, timeout).until(
+            lambda driver: len(driver.find_elements(*self.PORTFOLIO_ROWS)) == count
+        )
+
     def remove_portfolio_item(self, index=0):
         row = self.driver.find_elements(*self.PORTFOLIO_ROWS)[index]
         row.find_element(By.CSS_SELECTOR, "button[data-remove-holding]").click()
