@@ -49,18 +49,20 @@ def test_portfolio_add_and_remove_holding(authenticated_session, base_url):
     dashboard.open_dashboard()
     dashboard.go_to_portfolio()
 
-    before = dashboard.get_portfolio_list_texts()
+    # Add a holding and wait for the row count to change, rather than waiting for
+    # text changes inside the row. The displayed portfolio value can update
+    # asynchronously when exchange rates are fetched, which is not the same as
+    # the holding being added or removed.
+    before_count = dashboard.get_portfolio_count()
     dashboard.add_portfolio_holding(currency="USD", amount="500", notes="Test holding")
-    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, before)
+    dashboard.wait_for_portfolio_count(before_count + 1)
 
     items = dashboard.get_portfolio_list_texts()
     assert any("500" in item and "USD" in item for item in items)
 
+    # Remove the holding and wait for the actual row count to decrease.
     dashboard.remove_portfolio_item(0)
-    dashboard.wait_for_list_change(dashboard.get_portfolio_list_texts, items)
-
-    items_after = dashboard.get_portfolio_list_texts()
-    assert len(items_after) < len(items)
+    dashboard.wait_for_portfolio_count(before_count)
 
 
 # ---------------------------------------------------------------------------
