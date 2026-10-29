@@ -210,6 +210,7 @@ currency-exchange-tracker/
 │   ├── ARCHITECTURE.md
 │   ├── TEST_PLAN.md
 │   ├── TEST_SUMMARY.md
+│   ├── TEST_METHODS_GUIDE.md    # Test functions, helpers, and method reference
 │   └── DEFECT_LOG.md
 ├── .github/workflows/tests.yml
 ├── requirements.txt
@@ -334,6 +335,7 @@ Screenshots should be stored under `docs/screenshots/` and referenced here once 
 - [Architecture](docs/ARCHITECTURE.md)
 - [Test Plan](docs/TEST_PLAN.md)
 - [Final Test Summary](docs/TEST_SUMMARY.md)
+- [Test Method Reference Guide](docs/TEST_METHODS_GUIDE.md)
 - [Defect Log](docs/DEFECT_LOG.md)
 - [SDET Portfolio Case Study](docs/PORTFOLIO_CASE_STUDY.md)
 - [Screenshot Capture Guide](docs/screenshots/README.md)
