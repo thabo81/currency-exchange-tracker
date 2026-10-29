@@ -1,3 +1,5 @@
+"""Selenium UI tests for registration and login without email verification."""
+
 import uuid
 
 from selenium.webdriver.common.by import By

@@ -21,11 +21,13 @@ def register_and_login(client, email="user@example.com", password="StrongPass1!"
 
 
 def test_invalid_login_returns_401(client):
+    """An unknown email/password combination must not authenticate a user."""
     response = client.post("/login", json={"email": "missing@example.com", "password": "wrongpass"})
     assert response.status_code == 401
 
 
 def test_register_creates_account_without_verification(client):
+    """Registration creates the account directly without an OTP or email-verification step."""
     response = client.post("/register", json=registration_payload())
     assert response.status_code == 200
     body = response.json()
@@ -36,6 +38,7 @@ def test_register_creates_account_without_verification(client):
 
 
 def test_register_then_login_succeeds(client):
+    """A newly registered account can log in and receive the expected token pair."""
     login_response = register_and_login(client)
     assert login_response.status_code == 200
     body = login_response.json()
@@ -45,12 +48,14 @@ def test_register_then_login_succeeds(client):
 
 
 def test_duplicate_registration_returns_409(client):
+    """A second registration with the same email is rejected as a conflict."""
     client.post("/register", json=registration_payload())
     duplicate = client.post("/register", json=registration_payload())
     assert duplicate.status_code == 409
 
 
 def test_refresh_token_can_issue_new_access_token(client):
+    """A valid refresh token can be exchanged for a new access token."""
     tokens = register_and_login(client).json()
     response = client.post("/refresh-token", params={"token": tokens["refresh_token"]})
     assert response.status_code == 200
@@ -58,12 +63,14 @@ def test_refresh_token_can_issue_new_access_token(client):
 
 
 def test_access_token_cannot_be_used_as_refresh_token(client):
+    """The refresh endpoint rejects an access token because its token type is wrong."""
     tokens = register_and_login(client).json()
     response = client.post("/refresh-token", params={"token": tokens["access_token"]})
     assert response.status_code == 401
 
 
 def test_refresh_token_cannot_be_used_as_access_token(client):
+    """A protected endpoint rejects a refresh token used as a bearer access token."""
     tokens = register_and_login(client).json()
     response = client.get(
         "/favorites",
@@ -82,6 +89,7 @@ def test_refresh_token_cannot_be_used_as_access_token(client):
     ],
 )
 def test_register_password_length_boundaries(client, password, expected_status):
+    """Parameterized boundary checks cover password lengths below, at, and above the accepted limits."""
     response = client.post(
         "/register",
         json=registration_payload(email=f"pwlen-{len(password)}@example.com", password=password),
@@ -99,6 +107,7 @@ def test_register_password_length_boundaries(client, password, expected_status):
     ],
 )
 def test_convert_amount_boundaries(client, amount, expected_status):
+    """Boundary values check zero, a small positive amount, a negative amount, and a very large amount."""
     response = client.post(
         "/convert", json={"amount": amount, "from_currency": "USD", "to_currency": "ZAR"}
     )
@@ -110,6 +119,7 @@ def test_convert_amount_boundaries(client, amount, expected_status):
     [("US", 422), ("USD", 200), ("USDD", 422)],
 )
 def test_convert_currency_code_length_boundaries(client, currency_code, expected_status):
+    """Parameterized checks reject currency codes that are shorter or longer than three characters."""
     response = client.post(
         "/convert",
         json={"amount": 100, "from_currency": currency_code, "to_currency": "ZAR"},
@@ -203,6 +213,7 @@ def test_portfolio_negative_amount_currently_accepted(client):
     [("above", 200), ("below", 200), ("sideways", 422)],
 )
 def test_alert_direction_equivalence_classes(client, direction, expected_status):
+    """Only the supported alert directions, above and below, should be accepted."""
     tokens = register_and_login(client, email=f"alert-{direction}@example.com").json()
     response = client.post(
         "/alerts",
