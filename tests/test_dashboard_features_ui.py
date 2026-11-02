@@ -1,3 +1,5 @@
+"""Selenium regression tests for favourites, portfolio, alerts, and trends."""
+
 from selenium.webdriver.common.by import By
 
 from pages.dashboard_page import DashboardPage
@@ -45,6 +47,7 @@ def test_favorite_pair_can_be_added_and_removed(authenticated_session, base_url)
 # ---------------------------------------------------------------------------
 
 def test_portfolio_add_and_remove_holding(authenticated_session, base_url):
+    """A portfolio holding can be added and removed, with row counts reflecting each change."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
     dashboard.go_to_portfolio()
@@ -70,6 +73,7 @@ def test_portfolio_add_and_remove_holding(authenticated_session, base_url):
 # ---------------------------------------------------------------------------
 
 def test_alert_add_and_remove(authenticated_session, base_url):
+    """A user can create an alert for a currency pair and then delete it."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
     dashboard.go_to_alerts()
@@ -89,6 +93,7 @@ def test_alert_add_and_remove(authenticated_session, base_url):
 
 
 def test_alert_direction_options_present(authenticated_session, base_url):
+    """The alert form exposes both supported direction options in its selector."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
     dashboard.go_to_alerts()
@@ -108,6 +113,7 @@ def test_alert_direction_options_present(authenticated_session, base_url):
 # ---------------------------------------------------------------------------
 
 def test_trend_chart_handles_available_or_missing_data(authenticated_session, base_url):
+    """The Trends view handles either an available chart or a meaningful empty-state message."""
     dashboard = DashboardPage(authenticated_session, base_url)
     dashboard.open_dashboard()
     dashboard.go_to_trends()

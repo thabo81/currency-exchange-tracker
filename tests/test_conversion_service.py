@@ -108,6 +108,7 @@ def test_parse_rate_payload_rejects_malformed_provider_data(payload):
 def test_malformed_provider_response_uses_cached_rates(monkeypatch):
     """A malformed live response must use fallback rates and report cached source."""
 
+    # Fake the provider response so this test controls malformed payload behavior without network access.
     class FakeResponse:
         def __enter__(self):
             return self
@@ -121,6 +122,7 @@ def test_malformed_provider_response_uses_cached_rates(monkeypatch):
     cached_rates = {"USD": 1.0, "ZAR": 18.0}
     monkeypatch.setattr(services, "urlopen", lambda request, timeout: FakeResponse())
     monkeypatch.setattr(services, "fetch_cached_rates", lambda base: cached_rates)
+    # A malformed payload must not poison the persistent cache with unusable rates.
     monkeypatch.setattr(
         services,
         "save_rate_cache",

@@ -1,3 +1,5 @@
+"""End-to-end Selenium smoke test for the browser currency-conversion flow."""
+
 import time
 import pytest
 
@@ -6,8 +8,10 @@ from pages.dashboard_page import DashboardPage
 
 
 def test_currency_conversion_ui(browser, base_url):
+    """The conversion screen accepts an amount, submits a conversion, and swaps the currency pair."""
     login_page = LoginPage(browser, base_url)
     login_page.open_login()
+    # Existing fixed pause; explicit state-based waits would make this synchronization more robust.
     time.sleep(1)
     assert "Currency Exchange" in browser.page_source
 
